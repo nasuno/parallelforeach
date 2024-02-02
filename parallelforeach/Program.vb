@@ -11,14 +11,16 @@ Module Program
     Dim objectDictionary As New ConcurrentDictionary(Of Integer, MyObject)
     Dim uniqId As Integer = 0
     Public panelRecord As New Dictionary(Of String, Single)
-    Dim objectsIntersectionDict As New Dictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) ' objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
+    Dim objectsIntersectionDict As New ConcurrentDictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) ' objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
 
+
+    ' must concurrent this ^^ in the morning.
     Public Class Program
         Public Shared Sub Main()
 
             ' =Load 3D objects=
             CreateAndAddPregeneratedObjects()
-            'CreateUCSIcon()
+            CreateUCSIcon()
             'CreateBarExtensions()
             Console.WriteLine("3D objects loaded")
 
@@ -119,155 +121,164 @@ Module Program
 
 
 
+
                         Dim stopwatch As Stopwatch = Stopwatch.StartNew()
 
 
-                        For Each objectID In objectDictionary.Keys
-                            Dim obj As MyObject = Nothing
-                            If objectDictionary.TryGetValue(objectID, obj) Then
-                                Dim x As Long = obj.Location.X
-                                Dim y As Long = obj.Location.Y
-                                Dim z As Long = obj.Location.Z
 
-                                Dim rayPnt As (Integer, Integer, Integer) = (x, y, z)
+                        Parallel.ForEach(objectDictionary.Keys, Sub(objectID)
+                                                                    Dim obj As MyObject = Nothing
+                                                                    If objectDictionary.TryGetValue(objectID, obj) Then
 
-                                Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-                                ("North Panel", (0, 0, 1), (-370, 74, -199)),
-                                ("East Panel", (33, 0, 0), (-129, 74, -198)),
-                                ("South Panel", (0, 0, 30), (-130, 74, 43)),
-                                ("West Panel", (-2, 0, 0), (-371, 74, 42)),
-                                ("Top Panel", (0, 34, 0), (-370, 235, -198)),
-                                ("Bottom Panel", (0, 34, 0), (-370, 73, -198))}
+                                                                        ' Your processing logic here
+                                                                        Dim x As Long = obj.Location.X
+                                                                        Dim y As Long = obj.Location.Y
+                                                                        Dim z As Long = obj.Location.Z
 
-                                Dim intersections As New Dictionary(Of String, Vector3D)
+                                                                        Dim rayPnt As (Integer, Integer, Integer) = (x, y, z)
 
-                                For Each panel In panels
-                                    Dim intersect = GetIntersection(rayPnt, userCoordinates, panel.Item2, panel.Item3)
-                                    ' Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
+                                                                        Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+("North Panel", (0, 0, 1), (-370, 74, -199)),
+("East Panel", (33, 0, 0), (-129, 74, -198)),
+("South Panel", (0, 0, 30), (-130, 74, 43)),
+("West Panel", (-2, 0, 0), (-371, 74, 42)),
+("Top Panel", (0, 34, 0), (-370, 235, -198)),
+("Bottom Panel", (0, 34, 0), (-370, 73, -198))}
 
-                                    If intersect.Item2 Then
-                                        intersections.Add(panel.Item1, intersect.Item1)
-                                    End If
-                                Next
+                                                                        Dim intersections As New Dictionary(Of String, Vector3D)
 
-                                For Each panelName In intersections.Keys
-                                    Dim panelIntersection = intersections(panelName)
-                                    ' Console.WriteLine("{0} intersection point: {1}", panelName, panelIntersection)
-                                Next
+                                                                        For Each panel In panels
+                                                                            Dim intersect = GetIntersection(rayPnt, userCoordinates, panel.Item2, panel.Item3)
+                                                                            ' Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
 
-                                Dim intersectionsWithinBounds As New Dictionary(Of String, Vector3D)()
+                                                                            If intersect.Item2 Then
+                                                                                intersections.Add(panel.Item1, intersect.Item1)
+                                                                            End If
+                                                                        Next
 
-                                For Each panelName In intersections.Keys
-                                    Dim panelIntersection = intersections(panelName)
-                                    Dim coords As String() = panelIntersection.ToString().Split(", ")
+                                                                        For Each panelName In intersections.Keys
+                                                                            Dim panelIntersection = intersections(panelName)
+                                                                            ' Console.WriteLine("{0} intersection point: {1}", panelName, panelIntersection)
+                                                                        Next
 
-                                    Try
-                                        Dim point As (Integer, Integer, Integer) = (CInt(coords(0)), CInt(coords(1)), CInt(coords(2)))
-                                        Dim isWithinBounds As Boolean = bounds.IsPointWithinPanel(panelName, point)
-                                        ' Console.WriteLine($"{panelName} intersection point {panelIntersection} is within bounds: {isWithinBounds}")
+                                                                        Dim intersectionsWithinBounds As New Dictionary(Of String, Vector3D)()
 
-                                        If isWithinBounds Then
-                                            intersectionsWithinBounds.Add(panelName, panelIntersection)
-                                        End If
-                                    Catch e As OverflowException ' Handle the exception
-                                        'Console.WriteLine("One of the coordinates is too large or too small to fit into an integer.")
-                                        'Do nothing
-                                    End Try
+                                                                        For Each panelName In intersections.Keys
+                                                                            Dim panelIntersection = intersections(panelName)
+                                                                            Dim coords As String() = panelIntersection.ToString().Split(", ")
 
-                                Next
+                                                                            Try
+                                                                                Dim point As (Integer, Integer, Integer) = (CInt(coords(0)), CInt(coords(1)), CInt(coords(2)))
+                                                                                Dim isWithinBounds As Boolean = bounds.IsPointWithinPanel(panelName, point)
+                                                                                ' Console.WriteLine($"{panelName} intersection point {panelIntersection} is within bounds: {isWithinBounds}")
 
-                                For Each kvp In intersectionsWithinBounds
-                                    ' Console.WriteLine($"Panel: {kvp.Key}, Intersection: {kvp.Value}")
-                                Next
+                                                                                If isWithinBounds Then
+                                                                                    intersectionsWithinBounds.Add(panelName, panelIntersection)
+                                                                                End If
+                                                                            Catch e As OverflowException ' Handle the exception
+                                                                                'Console.WriteLine("One of the coordinates is too large or too small to fit into an integer.")
+                                                                                'Do nothing
+                                                                            End Try
 
-                                Dim points As Dictionary(Of String, (Integer, Integer, Integer)) = intersectionsWithinBounds.ToDictionary(Function(pair) pair.Key, Function(pair) pair.Value.ToIntTuple())
-                                Dim distances As Dictionary(Of String, Single) = points.ToDictionary(Function(pair) pair.Key, Function(pair) CalculateFastDistance(rayPnt, pair.Value))
-                                Dim minDistance As Single = Single.MaxValue
-                                Dim minDistanceCoordinate As (Integer, Integer, Integer) = (0, 0, 0)
+                                                                        Next
 
-                                For Each distancePair In distances
-                                    If distancePair.Value < minDistance Then
-                                        minDistance = distancePair.Value
-                                        minDistanceCoordinate = points(distancePair.Key)
-                                    End If
-                                Next
+                                                                        For Each kvp In intersectionsWithinBounds
+                                                                            ' Console.WriteLine($"Panel: {kvp.Key}, Intersection: {kvp.Value}")
+                                                                        Next
 
-                                'Dim minDistanceString As String = $"{minDistanceCoordinate.Item1},{minDistanceCoordinate.Item2},{minDistanceCoordinate.Item3};"
-                                'Dim whiteCoordinatesBuilder As New StringBuilder(minDistanceString)
-                                'Dim blackCoordinatesBuilder As New StringBuilder("-370,73,-200;")
+                                                                        Dim points As Dictionary(Of String, (Integer, Integer, Integer)) = intersectionsWithinBounds.ToDictionary(Function(pair) pair.Key, Function(pair) pair.Value.ToIntTuple())
+                                                                        Dim distances As Dictionary(Of String, Single) = points.ToDictionary(Function(pair) pair.Key, Function(pair) CalculateFastDistance(rayPnt, pair.Value))
+                                                                        Dim minDistance As Single = Single.MaxValue
+                                                                        Dim minDistanceCoordinate As (Integer, Integer, Integer) = (0, 0, 0)
 
-                                Dim individualObject As (ObjID As Integer, X As Double, Y As Double, Z As Double) = (obj.UniqIdentifier, minDistanceCoordinate.Item1, minDistanceCoordinate.Item2, minDistanceCoordinate.Item3)
+                                                                        For Each distancePair In distances
+                                                                            If distancePair.Value < minDistance Then
+                                                                                minDistance = distancePair.Value
+                                                                                minDistanceCoordinate = points(distancePair.Key)
+                                                                            End If
+                                                                        Next
 
-                                If Not objectsIntersectionDict.ContainsKey(individualObject.ObjID) Then
-                                    objectsIntersectionDict.Add(individualObject.ObjID, (New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), (0, 0, 0))))
-                                Else
-                                    Dim existingValues = objectsIntersectionDict(individualObject.ObjID).Item1 ' * 
-                                    If existingValues.X <> individualObject.X Or existingValues.Y <> individualObject.Y Or existingValues.Z <> individualObject.Z Then
-                                        Dim previousValue = existingValues ' *
-                                        objectsIntersectionDict(individualObject.ObjID) = New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), previousValue)
-                                    End If
-                                End If
+                                                                        'Dim minDistanceString As String = $"{minDistanceCoordinate.Item1},{minDistanceCoordinate.Item2},{minDistanceCoordinate.Item3};"
+                                                                        'Dim whiteCoordinatesBuilder As New StringBuilder(minDistanceString)
+                                                                        'Dim blackCoordinatesBuilder As New StringBuilder("-370,73,-200;")
 
-                            End If
+                                                                        Dim individualObject As (ObjID As Integer, X As Double, Y As Double, Z As Double) = (obj.UniqIdentifier, minDistanceCoordinate.Item1, minDistanceCoordinate.Item2, minDistanceCoordinate.Item3)
 
-                            ' HashSets to store unique current and previous coordinates explicitly.
-                            Dim uniqueCurrentCoordinatesSet As New HashSet(Of String)
-                            Dim uniquePreviousCoordinatesSet As New HashSet(Of String)
+                                                                        If Not objectsIntersectionDict.ContainsKey(individualObject.ObjID) Then
 
-                            For Each item As KeyValuePair(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double)))
-                                In objectsIntersectionDict
-                                ' Add the current coordinates as strings in the HashSet to ensure uniqueness.
-                                uniqueCurrentCoordinatesSet.Add($"{item.Value.Item1.X},{item.Value.Item1.Y},{item.Value.Item1.Z}")
+                                                                            Dim added As Boolean = objectsIntersectionDict.TryAdd(individualObject.ObjID, New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), (0, 0, 0)))
 
-                                ' Add the previous coordinates as strings in the HashSet to ensure uniqueness.
-                                uniquePreviousCoordinatesSet.Add($"{item.Value.Item2.X},{item.Value.Item2.Y},{item.Value.Item2.Z}")
+                                                                            'objectsIntersectionDict.Add(individualObject.ObjID, (New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), (0, 0, 0))))
+                                                                        Else
+                                                                            Dim existingValues = objectsIntersectionDict(individualObject.ObjID).Item1 ' * 
+                                                                            If existingValues.X <> individualObject.X Or existingValues.Y <> individualObject.Y Or existingValues.Z <> individualObject.Z Then
+                                                                                Dim previousValue = existingValues ' *
+                                                                                objectsIntersectionDict(individualObject.ObjID) = New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), previousValue)
+                                                                            End If
+                                                                        End If
 
-                            Next
+                                                                        'Dim ticks As Long = stopwatch.ElapsedTicks
+                                                                        'Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
+                                                                        'Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
+                                                                        'Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
+                                                                        'Console.WriteLine(elapsedMilliseconds)
 
-                            ' == difference engine work here ==   
+                                                                    End If
 
 
-                            Dim currentCoordinatesSb As New StringBuilder()
-                            Dim previousCoordinatesSb As New StringBuilder()
 
-                            For Each coordinate As String In uniqueCurrentCoordinatesSet ' * WHITE
-                                If currentCoordinatesSb.Length > 0 Then
-                                    currentCoordinatesSb.Append(";")
-                                End If
 
-                                'If CheckDifference(coordinate, pixelType.white) Then
-                                currentCoordinatesSb.Append(coordinate)
-                                'End If
+                                                                End Sub)
 
-                            Next
 
-                            For Each coordinate As String In uniquePreviousCoordinatesSet ' * BLACK
-                                If previousCoordinatesSb.Length > 0 Then
-                                    previousCoordinatesSb.Append(";")
-                                End If
+                        ' HashSets to store unique current and previous coordinates explicitly.
+                        Dim uniqueCurrentCoordinatesSet As New HashSet(Of String)
+                        Dim uniquePreviousCoordinatesSet As New HashSet(Of String)
 
-                                'If CheckDifference(coordinate, pixelType.black) Then
-                                previousCoordinatesSb.Append(coordinate)
-                                'End If
+                        For Each item As KeyValuePair(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double)))
+                                    In objectsIntersectionDict
+                            ' Add the current coordinates as strings in the HashSet to ensure uniqueness.
+                            uniqueCurrentCoordinatesSet.Add($"{item.Value.Item1.X},{item.Value.Item1.Y},{item.Value.Item1.Z}")
 
-                            Next
-
-                            Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)
-
-                            allFrameTuples.Add(coordinatesTuple2)
+                            ' Add the previous coordinates as strings in the HashSet to ensure uniqueness.
+                            uniquePreviousCoordinatesSet.Add($"{item.Value.Item2.X},{item.Value.Item2.Y},{item.Value.Item2.Z}")
 
                         Next
 
+                        ' == difference engine work here ==   
 
 
-                        Dim ticks As Long = stopwatch.ElapsedTicks
-                        Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
-                        Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
+                        Dim currentCoordinatesSb As New StringBuilder()
+                        Dim previousCoordinatesSb As New StringBuilder()
 
-                        ' Output the elapsed time directly in nanoseconds
-                        'Console.WriteLine(elapsedNanoseconds)
-                        Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
-                        Console.WriteLine(elapsedMilliseconds)
+                        For Each coordinate As String In uniqueCurrentCoordinatesSet ' * WHITE
+                            If currentCoordinatesSb.Length > 0 Then
+                                currentCoordinatesSb.Append(";")
+                            End If
+
+                            'If CheckDifference(coordinate, pixelType.white) Then
+                            currentCoordinatesSb.Append(coordinate)
+                            'End If
+
+                        Next
+
+                        For Each coordinate As String In uniquePreviousCoordinatesSet ' * BLACK
+                            If previousCoordinatesSb.Length > 0 Then
+                                previousCoordinatesSb.Append(";")
+                            End If
+
+                            'If CheckDifference(coordinate, pixelType.black) Then
+                            previousCoordinatesSb.Append(coordinate)
+                            'End If
+
+                        Next
+
+                        Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)
+
+                        allFrameTuples.Add(coordinatesTuple2)
+
+
+
 
 
 

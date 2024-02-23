@@ -10,11 +10,11 @@ Module Program
     Public userCoordinates As (Integer, Integer, Integer)
     Dim objectDictionary As New ConcurrentDictionary(Of Integer, MyObject)
     Dim uniqId As Integer = 0
-    Public panelRecord As New Dictionary(Of String, Single)
+    'Public panelRecord As New Dictionary(Of String, Single)   ' ** i commented THIS I THINK IT'S REDUNDENT ** BETTER chec it
     Dim objectsIntersectionDict As New ConcurrentDictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) ' objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
 
 
-    ' must concurrent this ^^ in the morning.
+
     Public Class Program
         Public Shared Sub Main()
 
@@ -24,13 +24,14 @@ Module Program
             'CreateBarExtensions()
             Console.WriteLine("3D objects loaded")
 
+
             Dim produceWorker As New ComponentModel.BackgroundWorker
             Dim doneEvent As New AutoResetEvent(False)
             produceWorker.WorkerSupportsCancellation = True
             AddHandler produceWorker.DoWork,
                 Sub(sender As Object, e As ComponentModel.DoWorkEventArgs)
                     While Not produceWorker.CancellationPending ' Infinite loop
-                        ConsumeData()
+                        ConsumeData() 'game loop
                     End While
                 End Sub
             AddHandler produceWorker.RunWorkerCompleted,
@@ -68,6 +69,7 @@ Module Program
         End Sub
 
         Public Shared Sub ConsumeData()
+
             Dim bounds As New PanelBounds() ' [preloading for computations] ' move this up *#*
             'Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
             'Dim enc1252 = Encoding.GetEncoding(1252)
@@ -85,7 +87,7 @@ Module Program
             Dim doIGo As New Boolean
             doIGo = False
 
-            While i < 1 'game loop
+            While i < 1
                 i += 1
                 i -= 1
 
@@ -126,7 +128,9 @@ Module Program
 
 
 
+
                         Parallel.ForEach(objectDictionary.Keys, Sub(objectID)
+
                                                                     Dim obj As MyObject = Nothing
                                                                     If objectDictionary.TryGetValue(objectID, obj) Then
 
@@ -137,15 +141,10 @@ Module Program
 
                                                                         Dim rayPnt As (Integer, Integer, Integer) = (x, y, z)
 
-                                                                        Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-("North Panel", (0, 0, 1), (-370, 74, -199)),
-("East Panel", (33, 0, 0), (-129, 74, -198)),
-("South Panel", (0, 0, 30), (-130, 74, 43)),
-("West Panel", (-2, 0, 0), (-371, 74, 42)),
-("Top Panel", (0, 34, 0), (-370, 235, -198)),
-("Bottom Panel", (0, 34, 0), (-370, 73, -198))}
-
                                                                         Dim intersections As New Dictionary(Of String, Vector3D)
+
+                                                                        Dim panels = PanelDataManager.Normals
+
 
                                                                         For Each panel In panels
                                                                             Dim intersect = GetIntersection(rayPnt, userCoordinates, panel.Item2, panel.Item3)
@@ -454,19 +453,48 @@ Module Program
         Return rayPoint - rayVector * prod3
     End Function
 
+
+
+
+
+
+
+
+
+    Public Class PanelDataManager
+        Public Shared ReadOnly Property PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+        ("North Panel", (-370, 74, -199), (-130, 234, -199)),
+        ("East Panel", (-129, 74, -198), (-129, 234, 43)),
+        ("South Panel", (-130, 74, 43), (-370, 234, 43)),
+        ("West Panel", (-371, 74, 42), (-371, 234, -198)),
+        ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
+        ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
+    }
+
+        Public Shared ReadOnly Property Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+        ("North Panel", (0, 0, 1), (-370, 74, -199)),
+        ("East Panel", (33, 0, 0), (-129, 74, -198)),
+        ("South Panel", (0, 0, 30), (-130, 74, 43)),
+        ("West Panel", (-2, 0, 0), (-371, 74, 42)),
+        ("Top Panel", (0, 34, 0), (-370, 235, -198)),
+        ("Bottom Panel", (0, 34, 0), (-370, 73, -198))
+    }
+    End Class
+
+
+
+
+
+
+
+
+
     Public Class PanelBounds
         Private ReadOnly _precalculatedBounds As Dictionary(Of String, (Integer, Integer, Integer, Integer, Integer, Integer))
-
+        ' the holo_dt exists and then the loop may use it,...
+        ' the loop derives its ephermiral copy from the real- from pre loop definition.
         Public Sub New()
-            Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-                ("North Panel", (-370, 74, -199), (-130, 234, -199)),
-                ("East Panel", (-129, 74, -198), (-129, 234, 43)),
-                ("South Panel", (-130, 74, 43), (-370, 234, 43)),
-                ("West Panel", (-371, 74, 42), (-371, 234, -198)),
-                ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
-                ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
-            }
-
+            Dim panels = PanelDataManager.PanelCorners ' ** RENAME THIS **
             _precalculatedBounds = panels.ToDictionary(Function(panel) panel.Item1, Function(panel) CalculateMinMaxBounds(panel.Item2, panel.Item3))
         End Sub
 

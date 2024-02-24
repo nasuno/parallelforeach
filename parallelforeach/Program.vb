@@ -214,11 +214,22 @@ Module Program
                                                                             End If
                                                                         End If
 
+
+
+
+
+
                                                                         Dim ticks As Long = stopwatch.ElapsedTicks
                                                                         Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
                                                                         Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
                                                                         Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
                                                                         Console.WriteLine(elapsedMilliseconds)
+
+
+
+
+
+
 
                                                                     End If
 
@@ -272,14 +283,6 @@ Module Program
 
                         Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)
 
-
-
-
-                        Dim ticks As Long = stopwatch.ElapsedTicks
-                        Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
-                        Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
-                        Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
-                        Console.WriteLine(elapsedMilliseconds)
 
 
 

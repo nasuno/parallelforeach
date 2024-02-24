@@ -70,7 +70,6 @@ Module Program
 
         Public Shared Sub ConsumeData()
 
-            Dim bounds As New PanelBounds() ' [preloading for computations] ' move this up *#*
             'Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
             'Dim enc1252 = Encoding.GetEncoding(1252)
             'CreateBlockUpdatesDatabaseStructure()
@@ -121,8 +120,7 @@ Module Program
                         fillUserCoordinates(playerdata)
                         'Console.WriteLine(objectDictionary.Count.ToString)
 
-
-
+                        Dim bounds As New PanelBounds()
 
                         Dim stopwatch As Stopwatch = Stopwatch.StartNew()
 
@@ -143,7 +141,7 @@ Module Program
 
                                                                         Dim intersections As New Dictionary(Of String, Vector3D)
 
-                                                                        Dim panels = PanelDataManager.Normals
+                                                                        Dim panels = PanelDataManager.Normals ' * Change name of PanelDataManager * FFS manager really?
 
 
                                                                         For Each panel In panels
@@ -216,11 +214,11 @@ Module Program
                                                                             End If
                                                                         End If
 
-                                                                        'Dim ticks As Long = stopwatch.ElapsedTicks
-                                                                        'Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
-                                                                        'Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
-                                                                        'Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
-                                                                        'Console.WriteLine(elapsedMilliseconds)
+                                                                        Dim ticks As Long = stopwatch.ElapsedTicks
+                                                                        Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
+                                                                        Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
+                                                                        Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
+                                                                        Console.WriteLine(elapsedMilliseconds)
 
                                                                     End If
 
@@ -273,6 +271,19 @@ Module Program
                         Next
 
                         Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)
+
+
+
+
+                        Dim ticks As Long = stopwatch.ElapsedTicks
+                        Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
+                        Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
+                        Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
+                        Console.WriteLine(elapsedMilliseconds)
+
+
+
+
 
                         allFrameTuples.Add(coordinatesTuple2)
 
@@ -457,29 +468,6 @@ Module Program
 
 
 
-
-
-
-
-    Public Class PanelDataManager
-        Public Shared ReadOnly Property PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-        ("North Panel", (-370, 74, -199), (-130, 234, -199)),
-        ("East Panel", (-129, 74, -198), (-129, 234, 43)),
-        ("South Panel", (-130, 74, 43), (-370, 234, 43)),
-        ("West Panel", (-371, 74, 42), (-371, 234, -198)),
-        ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
-        ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
-    }
-
-        Public Shared ReadOnly Property Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-        ("North Panel", (0, 0, 1), (-370, 74, -199)),
-        ("East Panel", (33, 0, 0), (-129, 74, -198)),
-        ("South Panel", (0, 0, 30), (-130, 74, 43)),
-        ("West Panel", (-2, 0, 0), (-371, 74, 42)),
-        ("Top Panel", (0, 34, 0), (-370, 235, -198)),
-        ("Bottom Panel", (0, 34, 0), (-370, 73, -198))
-    }
-    End Class
 
 
 
@@ -914,5 +902,61 @@ yolo:
 
 
 #End Region
+
+
+
+
+
+
+
+
+    Public Class PanelDataManager
+        Private CenterCoordinates As (centerX As Integer, centerY As Integer, centerZ As Integer)
+
+        Public Sub New()
+            Console.Write("Enter the X coordinate of the center: ")
+            Dim centerX As Integer = Convert.ToInt32(Console.ReadLine())
+            Console.Write("Enter the Y coordinate of the center: ")
+            Dim centerY As Integer = Convert.ToInt32(Console.ReadLine())
+            Console.Write("Enter the Z coordinate of the center: ")
+            Dim centerZ As Integer = Convert.ToInt32(Console.ReadLine())
+
+            CenterCoordinates = (centerX, centerY, centerZ)
+        End Sub
+
+        ' instantiate me in main
+
+
+
+        Public Shared ReadOnly Property PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' which of these gets called first cause...
+        ("North Panel", (-370, 74, -199), (-130, 234, -199)),
+        ("East Panel", (-129, 74, -198), (-129, 234, 43)),
+        ("South Panel", (-130, 74, 43), (-370, 234, 43)),
+        ("West Panel", (-371, 74, 42), (-371, 234, -198)),
+        ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
+        ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
+    }
+
+        Public Shared ReadOnly Property Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' this one might grab its second values from the second values of PanelCorners.
+        ("North Panel", (0, 0, 1), (-370, 74, -199)),
+        ("East Panel", (33, 0, 0), (-129, 74, -198)),
+        ("South Panel", (0, 0, 30), (-130, 74, 43)),
+        ("West Panel", (-2, 0, 0), (-371, 74, 42)),
+        ("Top Panel", (0, 34, 0), (-370, 235, -198)),
+        ("Bottom Panel", (0, 34, 0), (-370, 73, -198))
+    }
+        ' this being pre-work for making the new code easy to integrate.
+
+
+
+    End Class
+
+
+
+
+
+
+
+
 
 End Module

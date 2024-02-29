@@ -13,6 +13,10 @@ Module Program
     'Public panelRecord As New Dictionary(Of String, Single)   ' ** i commented THIS I THINK IT'S REDUNDENT ** BETTER chec it
     Dim objectsIntersectionDict As New ConcurrentDictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) ' objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
 
+    Public panelsArray() As (PanelName As String, FirstTuple As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
+    Public panelNormalsArray() As (PanelName As String, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
+
+    Dim panelData As New PanelDataManager
 
 
     Public Class Program
@@ -115,6 +119,8 @@ Module Program
                             'do nothing
                     End Select
 
+                    Dim stopwatch As Stopwatch = Stopwatch.StartNew()
+
                     If doIGo = True Then
 
                         fillUserCoordinates(playerdata)
@@ -122,7 +128,6 @@ Module Program
 
                         Dim bounds As New PanelBounds()
 
-                        Dim stopwatch As Stopwatch = Stopwatch.StartNew()
 
 
 
@@ -141,12 +146,19 @@ Module Program
 
                                                                         Dim intersections As New Dictionary(Of String, Vector3D)
 
-                                                                        Dim panels = PanelDataManager.Normals ' * Change name of PanelDataManager * FFS manager really?
+                                                                        'Dim panels = PanelDataManager.Normals ' * Change name of PanelDataManager * FFS manager really?
 
+                                                                        '                                                                        Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+                                                                        '("North Panel", (0, 0, 1), (-370, 74, -199)),
+                                                                        '("East Panel", (33, 0, 0), (-129, 74, -198)), ' we need to be sending around an dictionary that contains the elements needed for-and-by the parallel-foreach **=**
+                                                                        '("South Panel", (0, 0, 30), (-130, 74, 43)),
+                                                                        '("West Panel", (-2, 0, 0), (-371, 74, 42)),
+                                                                        '("Top Panel", (0, 34, 0), (-370, 235, -198)),
+                                                                        '("Bottom Panel", (0, 34, 0), (-370, 73, -198))}
 
-                                                                        For Each panel In panels
+                                                                        For Each panel In panelNormalsArray
                                                                             Dim intersect = GetIntersection(rayPnt, userCoordinates, panel.Item2, panel.Item3)
-                                                                            ' Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
+                                                                            Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
 
                                                                             If intersect.Item2 Then
                                                                                 intersections.Add(panel.Item1, intersect.Item1)
@@ -213,22 +225,6 @@ Module Program
                                                                                 objectsIntersectionDict(individualObject.ObjID) = New Tuple(Of (Double, Double, Double), (Double, Double, Double))((individualObject.X, individualObject.Y, individualObject.Z), previousValue)
                                                                             End If
                                                                         End If
-
-
-
-
-
-
-                                                                        Dim ticks As Long = stopwatch.ElapsedTicks
-                                                                        Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
-                                                                        Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
-                                                                        Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
-                                                                        Console.WriteLine(elapsedMilliseconds)
-
-
-
-
-
 
 
                                                                     End If
@@ -328,6 +324,25 @@ Module Program
                         '#====================#
                     Else
                     End If
+
+
+
+
+
+
+
+                    Dim ticks As Long = stopwatch.ElapsedTicks
+                    Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
+                    Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
+                    Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
+                    Console.WriteLine(elapsedMilliseconds)
+
+
+
+
+
+
+
 
                 End If
 
@@ -485,8 +500,19 @@ Module Program
         ' the holo_dt exists and then the loop may use it,...
         ' the loop derives its ephermiral copy from the real- from pre loop definition.
         Public Sub New()
-            Dim panels = PanelDataManager.PanelCorners ' ** RENAME THIS **
-            _precalculatedBounds = panels.ToDictionary(Function(panel) panel.Item1, Function(panel) CalculateMinMaxBounds(panel.Item2, panel.Item3))
+            'Dim panels = panelData.PanelCorners ' ** RENAME THIS **
+
+
+            'Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+            '    ("North Panel", (-370, 74, -199), (-130, 234, -199)),
+            '    ("East Panel", (-129, 74, -198), (-129, 234, 43)),
+            '    ("South Panel", (-130, 74, 43), (-370, 234, 43)),
+            '    ("West Panel", (-371, 74, 42), (-371, 234, -198)),
+            '    ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
+            '    ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
+            '}
+
+            _precalculatedBounds = panelsArray.ToDictionary(Function(panel) panel.Item1, Function(panel) CalculateMinMaxBounds(panel.Item2, panel.Item3))
         End Sub
 
         Private Function CalculateMinMaxBounds(corner1 As (Integer, Integer, Integer), corner2 As (Integer, Integer, Integer)) As (Integer, Integer, Integer, Integer, Integer, Integer)
@@ -916,40 +942,236 @@ yolo:
     Public Class PanelDataManager
         Private CenterCoordinates As (centerX As Integer, centerY As Integer, centerZ As Integer)
 
+
+        Public Shared North_a As (Integer, Integer, Integer)
+        Public Shared North_b As (Integer, Integer, Integer)
+        Public Shared North_c As (Integer, Integer, Integer)
+        Public Shared North_d As (Integer, Integer, Integer)
+        Public Shared South_a As (Integer, Integer, Integer)
+        Public Shared South_b As (Integer, Integer, Integer)
+        Public Shared South_c As (Integer, Integer, Integer)
+        Public Shared South_d As (Integer, Integer, Integer)
+        Public Shared West_a As (Integer, Integer, Integer)
+        Public Shared West_b As (Integer, Integer, Integer)
+        Public Shared West_c As (Integer, Integer, Integer)
+        Public Shared West_d As (Integer, Integer, Integer)
+        Public Shared East_a As (Integer, Integer, Integer)
+        Public Shared East_b As (Integer, Integer, Integer)
+        Public Shared East_c As (Integer, Integer, Integer)
+        Public Shared East_d As (Integer, Integer, Integer)
+        Public Shared Top_a As (Integer, Integer, Integer)
+        Public Shared Top_b As (Integer, Integer, Integer)
+        Public Shared Top_c As (Integer, Integer, Integer)
+        Public Shared Top_d As (Integer, Integer, Integer)
+        Public Shared Bottom_a As (Integer, Integer, Integer)
+        Public Shared Bottom_b As (Integer, Integer, Integer)
+        Public Shared Bottom_c As (Integer, Integer, Integer)
+        Public Shared Bottom_d As (Integer, Integer, Integer)
+
         Public Sub New()
             Console.Write("Enter the X coordinate of the center: ")
-            Dim centerX As Integer = Convert.ToInt32(Console.ReadLine())
+            Dim centerX As Integer = Convert.ToInt32(Console.ReadLine()) ' -250 ' 576
             Console.Write("Enter the Y coordinate of the center: ")
-            Dim centerY As Integer = Convert.ToInt32(Console.ReadLine())
+            Dim centerY As Integer = Convert.ToInt32(Console.ReadLine()) ' 73   ' 81
             Console.Write("Enter the Z coordinate of the center: ")
-            Dim centerZ As Integer = Convert.ToInt32(Console.ReadLine())
+            Dim centerZ As Integer = Convert.ToInt32(Console.ReadLine()) ' -78  ' -512
 
             CenterCoordinates = (centerX, centerY, centerZ)
+            populateCorners(CenterCoordinates)
         End Sub
 
-        ' instantiate me in main
+
+        '    Public Shared Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' should we make a topmost dim for holding these and then 
+        '    ("North Panel", (0, 0, 1), (North_d)), 'instead of creating these shared ones we send this individual datas to the new 
+        '    ("East Panel", (33, 0, 0), (East_d)),
+        '    ("South Panel", (0, 0, 30), (South_d)), ' use add to get the values NEW into array
+        '    ("West Panel", (-2, 0, 0), (West_d)), ' ensure that it is a in working order and not accumulating data each frame.
+        '    ("Top Panel", (0, 34, 0), (Top_d)),
+        '    ("Bottom Panel", (0, 34, 0), (Bottom_a))
+        '}
+
+
+        '    Public Shared PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
+        '    ("North Panel", (North_d), (North_b)),
+        '    ("East Panel", (East_d), (East_b)), ' yea create each individual row of this tuple (string, int-tuple, int-tuple)
+        '    ("South Panel", (South_d), (South_b)), ' and do the add to topmost dim.array
+        '    ("West Panel", (West_d), (West_b)),
+        '    ("Top Panel", (Top_d), (Top_b)), ' so we wont be making these or doing this here
+        '    ("Bottom Panel", (Bottom_a), (Bottom_c)) ' do it below where these get these data.
+        '}
+
+
+        Sub populateCorners(center As (Integer, Integer, Integer))
+
+
+            Const halfSideLength As Integer = 121
+            Dim A As (Integer, Integer, Integer) = (center.Item1 - halfSideLength, center.Item2, center.Item3 - halfSideLength) ' Calculate the coordinates
+            Dim B As (Integer, Integer, Integer) = (center.Item1 + halfSideLength, center.Item2, center.Item3 - halfSideLength) ' of the four points,
+            Dim C As (Integer, Integer, Integer) = (center.Item1 + halfSideLength, center.Item2, center.Item3 + halfSideLength) ' without using fractions.
+            Dim D As (Integer, Integer, Integer) = (center.Item1 - halfSideLength, center.Item2, center.Item3 + halfSideLength)
+            Dim bottom As New Dictionary(Of String, (Integer, Integer, Integer))
+            bottom.Add("a", A)
+            bottom.Add("b", B)
+            bottom.Add("c", C)
+            bottom.Add("d", D)
+            Const elevation As Integer = 162
+            Dim Top As New Dictionary(Of String, (Integer, Integer, Integer))
+            Top.Add("c", (bottom("b").Item1, bottom("b").Item2 + elevation, bottom("b").Item3)) ' Top
+            Top.Add("d", (bottom("a").Item1, bottom("a").Item2 + elevation, bottom("a").Item3))
+            Top.Add("b", (bottom("c").Item1, bottom("c").Item2 + elevation, bottom("c").Item3))
+            Top.Add("a", (bottom("d").Item1, bottom("d").Item2 + elevation, bottom("d").Item3))
+            Dim North As New Dictionary(Of String, (Integer, Integer, Integer)) ' North
+            North.Add("c", bottom("b"))
+            North.Add("d", bottom("a"))
+            North.Add("b", (North("c").Item1, North("c").Item2 + elevation, North("c").Item3))
+            North.Add("a", (North("d").Item1, North("d").Item2 + elevation, North("d").Item3))
+            Dim South As New Dictionary(Of String, (Integer, Integer, Integer)) ' South
+            South.Add("c", bottom("d"))
+            South.Add("d", bottom("c"))
+            South.Add("b", (South("c").Item1, South("c").Item2 + elevation, South("c").Item3))
+            South.Add("a", (South("d").Item1, South("d").Item2 + elevation, South("d").Item3))
+            Dim West As New Dictionary(Of String, (Integer, Integer, Integer)) ' West
+            West.Add("c", bottom("a"))
+            West.Add("d", bottom("d"))
+            West.Add("b", (West("c").Item1, West("c").Item2 + elevation, West("c").Item3))
+            West.Add("a", (West("d").Item1, West("d").Item2 + elevation, West("d").Item3))
+            Dim East As New Dictionary(Of String, (Integer, Integer, Integer)) ' East
+            East.Add("c", bottom("c"))
+            East.Add("d", bottom("b"))
+            East.Add("b", (East("c").Item1, East("c").Item2 + elevation, East("c").Item3))
+            East.Add("a", (East("d").Item1, East("d").Item2 + elevation, East("d").Item3))
+            ' only then 
+            Top("a") = (Top("a").Item1 + 1, Top("a").Item2, Top("a").Item3 - 1) ' Top
+            Top("b") = (Top("b").Item1 - 1, Top("b").Item2, Top("b").Item3 - 1) ' Axis adjustments
+            Top("c") = (Top("c").Item1 - 1, Top("c").Item2, Top("c").Item3 + 1)
+            Top("d") = (Top("d").Item1 + 1, Top("d").Item2, Top("d").Item3 + 1)
+            bottom("a") = (bottom("a").Item1 + 1, bottom("a").Item2, bottom("a").Item3 + 1) ' bottom
+            bottom("b") = (bottom("b").Item1 - 1, bottom("b").Item2, bottom("b").Item3 + 1)
+            bottom("c") = (bottom("c").Item1 - 1, bottom("c").Item2, bottom("c").Item3 - 1)
+            bottom("d") = (bottom("d").Item1 + 1, bottom("d").Item2, bottom("d").Item3 - 1)
+            West("a") = (West("a").Item1, West("a").Item2 - 1, West("a").Item3 - 1) ' West
+            West("b") = (West("b").Item1, West("b").Item2 - 1, West("b").Item3 + 1)
+            West("c") = (West("c").Item1, West("c").Item2 + 1, West("c").Item3 + 1)
+            West("d") = (West("d").Item1, West("d").Item2 + 1, West("d").Item3 - 1)
+            North("a") = (North("a").Item1 + 1, North("a").Item2 - 1, North("a").Item3) ' North
+            North("b") = (North("b").Item1 - 1, North("b").Item2 - 1, North("b").Item3)
+            North("c") = (North("c").Item1 - 1, North("c").Item2 + 1, North("c").Item3)
+            North("d") = (North("d").Item1 + 1, North("d").Item2 + 1, North("d").Item3)
+            South("a") = (South("a").Item1 - 1, South("a").Item2 - 1, South("a").Item3) ' South
+            South("b") = (South("b").Item1 + 1, South("b").Item2 - 1, South("b").Item3)
+            South("c") = (South("c").Item1 + 1, South("c").Item2 + 1, South("c").Item3)
+            South("d") = (South("d").Item1 - 1, South("d").Item2 + 1, South("d").Item3)
+            East("a") = (East("a").Item1, East("a").Item2 - 1, East("a").Item3 + 1) ' East
+            East("b") = (East("b").Item1, East("b").Item2 - 1, East("b").Item3 - 1)
+            East("c") = (East("c").Item1, East("c").Item2 + 1, East("c").Item3 - 1)
+            East("d") = (East("d").Item1, East("d").Item2 + 1, East("d").Item3 + 1)
+
+            ' Displaying the contents
+            'Console.WriteLine("Bottom:")
+            'For Each item In bottom
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+            'Console.WriteLine("Top:")
+            'For Each item In Top
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+            'Console.WriteLine("North:")
+            'For Each item In North
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+            'Console.WriteLine("South:")
+            'For Each item In South
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+            'Console.WriteLine("West:")
+            'For Each item In West
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+            'Console.WriteLine("East:")
+            'For Each item In East
+            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
+            'Next
+
+            Bottom_a = bottom("a")
+            Bottom_b = bottom("b")
+            Bottom_c = bottom("c")
+            Bottom_d = bottom("d")
+            Top_a = Top("a")
+            Top_b = Top("b")
+            Top_c = Top("c")
+            Top_d = Top("d")
+            North_a = North("a")
+            North_b = North("b")
+            North_c = North("c")
+            North_d = North("d")
+            South_a = South("a")
+            South_b = South("b")
+            South_c = South("c")
+            South_d = South("d")
+            West_a = West("a")
+            West_b = West("b")
+            West_c = West("c")
+            West_d = West("d")
+            East_a = East("a")
+            East_b = East("b")
+            East_c = East("c")
+            East_d = East("d")
+
+            panelsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
+            ("Bottom Panel", bottom("a"), bottom("c")),
+            ("North Panel", North("d"), North("b")),
+            ("East Panel", East("d"), East("b")),
+            ("South Panel", South("d"), South("b")),
+            ("West Panel", West("d"), West("b")),
+            ("Top Panel", Top("d"), Top("b"))
+        }
+            panelNormalsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
+            ("Bottom Panel", (0, 34, 0), bottom("c")),
+            ("North Panel", (0, 0, 1), North("b")),
+            ("East Panel", (33, 0, 0), East("b")),
+            ("South Panel", (0, 0, 30), South("b")),
+            ("West Panel", (-2, 0, 0), West("b")),
+            ("Top Panel", (0, 34, 0), Top("b"))
+        }
 
 
 
-        Public Shared ReadOnly Property PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' which of these gets called first cause...
-        ("North Panel", (-370, 74, -199), (-130, 234, -199)),
-        ("East Panel", (-129, 74, -198), (-129, 234, 43)),
-        ("South Panel", (-130, 74, 43), (-370, 234, 43)),
-        ("West Panel", (-371, 74, 42), (-371, 234, -198)),
-        ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
-        ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
-    }
 
-        Public Shared ReadOnly Property Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' this one might grab its second values from the second values of PanelCorners.
-        ("North Panel", (0, 0, 1), (-370, 74, -199)),
-        ("East Panel", (33, 0, 0), (-129, 74, -198)),
-        ("South Panel", (0, 0, 30), (-130, 74, 43)),
-        ("West Panel", (-2, 0, 0), (-371, 74, 42)),
-        ("Top Panel", (0, 34, 0), (-370, 235, -198)),
-        ("Bottom Panel", (0, 34, 0), (-370, 73, -198))
-    }
-        ' this being pre-work for making the new code easy to integrate.
+        End Sub
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Sub PrintNormal(panelName As String, p1 As (Integer, Integer, Integer), p2 As (Integer, Integer, Integer), p3 As (Integer, Integer, Integer))
+            Dim normal = CalculateNormal(p1, p2, p3)
+            Console.WriteLine("{0} Normal: ({1}, {2}, {3})", panelName, normal.Item1, normal.Item2, normal.Item3)
+        End Sub
+
+        Function CalculateNormal(firstCorner As (Integer, Integer, Integer), secondCorner As (Integer, Integer, Integer), thirdCorner As (Integer, Integer, Integer)) As (Integer, Integer, Integer)
+            Dim edgeVectorFirstToSecond = (secondCorner.Item1 - firstCorner.Item1, secondCorner.Item2 - firstCorner.Item2, secondCorner.Item3 - firstCorner.Item3)
+            Dim edgeVectorFirstToThird = (thirdCorner.Item1 - firstCorner.Item1, thirdCorner.Item2 - firstCorner.Item2, thirdCorner.Item3 - firstCorner.Item3)
+            Dim crossProduct = (edgeVectorFirstToSecond.Item2 * edgeVectorFirstToThird.Item3 - edgeVectorFirstToSecond.Item3 * edgeVectorFirstToThird.Item2,
+                             edgeVectorFirstToSecond.Item3 * edgeVectorFirstToThird.Item1 - edgeVectorFirstToSecond.Item1 * edgeVectorFirstToThird.Item3,
+                             edgeVectorFirstToSecond.Item1 * edgeVectorFirstToThird.Item2 - edgeVectorFirstToSecond.Item2 * edgeVectorFirstToThird.Item1)
+            Return crossProduct
+        End Function
 
 
     End Class

@@ -24,7 +24,7 @@ Module Program
 
             ' =Load 3D objects=
             CreateAndAddPregeneratedObjects()
-            CreateUCSIcon()
+            'CreateUCSIcon()
             'CreateBarExtensions()
             Console.WriteLine("3D objects loaded")
 
@@ -390,12 +390,12 @@ Module Program
     Sub CreateAndAddPregeneratedObjects()
         AddMyObjectToFactory(0, 0, 0) ' zero point of all UCS axes
 #Region "one_coord_per_panel"
-        AddMyObjectToFactory(-258, 147, 339)
-        AddMyObjectToFactory(-664, 147, -78)
-        AddMyObjectToFactory(-255, 147, -493)
-        AddMyObjectToFactory(168, 147, -74)
-        AddMyObjectToFactory(-250, 300, -78)
-        AddMyObjectToFactory(-250, -75, -78)
+        'AddMyObjectToFactory(-258, 147, 339)
+        'AddMyObjectToFactory(-664, 147, -78)
+        'AddMyObjectToFactory(-255, 147, -493)
+        'AddMyObjectToFactory(168, 147, -74)
+        'AddMyObjectToFactory(-250, 300, -78)
+        'AddMyObjectToFactory(-250, -75, -78)
 #End Region
     End Sub
     Sub AddMyObjectToFactory(x As Integer, y As Integer, z As Integer)
@@ -497,11 +497,7 @@ Module Program
 
     Public Class PanelBounds
         Private ReadOnly _precalculatedBounds As Dictionary(Of String, (Integer, Integer, Integer, Integer, Integer, Integer))
-        ' the holo_dt exists and then the loop may use it,...
-        ' the loop derives its ephermiral copy from the real- from pre loop definition.
         Public Sub New()
-            'Dim panels = panelData.PanelCorners ' ** RENAME THIS **
-
 
             'Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
             '    ("North Panel", (-370, 74, -199), (-130, 234, -199)),
@@ -970,7 +966,7 @@ yolo:
 
         Public Sub New()
             Console.Write("Enter the X coordinate of the center: ")
-            Dim centerX As Integer = Convert.ToInt32(Console.ReadLine()) ' -250 ' 576
+            Dim centerX As Integer = Convert.ToInt32(Console.ReadLine()) ' -250 ' -575
             Console.Write("Enter the Y coordinate of the center: ")
             Dim centerY As Integer = Convert.ToInt32(Console.ReadLine()) ' 73   ' 81
             Console.Write("Enter the Z coordinate of the center: ")
@@ -1066,33 +1062,7 @@ yolo:
             East("c") = (East("c").Item1, East("c").Item2 + 1, East("c").Item3 - 1)
             East("d") = (East("d").Item1, East("d").Item2 + 1, East("d").Item3 + 1)
 
-            ' Displaying the contents
-            'Console.WriteLine("Bottom:")
-            'For Each item In bottom
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-            'Console.WriteLine("Top:")
-            'For Each item In Top
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-            'Console.WriteLine("North:")
-            'For Each item In North
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-            'Console.WriteLine("South:")
-            'For Each item In South
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-            'Console.WriteLine("West:")
-            'For Each item In West
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-            'Console.WriteLine("East:")
-            'For Each item In East
-            '    Console.WriteLine($"{item.Key}: ({item.Value.Item1}, {item.Value.Item2}, {item.Value.Item3})")
-            'Next
-
-            Bottom_a = bottom("a")
+            Bottom_a = bottom("a") ' Set As Shared
             Bottom_b = bottom("b")
             Bottom_c = bottom("c")
             Bottom_d = bottom("d")
@@ -1118,52 +1088,34 @@ yolo:
             East_d = East("d")
 
             panelsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
-            ("Bottom Panel", bottom("a"), bottom("c")),
-            ("North Panel", North("d"), North("b")),
+            ("Bottom Panel", bottom("a"), bottom("c")), ' for detecting the coordinates which are the ones the vector passes through  
+            ("North Panel", North("d"), North("b")), ' from the point in question ->thru the viewer.
             ("East Panel", East("d"), East("b")),
             ("South Panel", South("d"), South("b")),
             ("West Panel", West("d"), West("b")),
             ("Top Panel", Top("d"), Top("b"))
         }
+
+            Dim bottomNormal = CalculateNormal(Bottom_a, Bottom_b, Bottom_c)
+            Dim northNormal = CalculateNormal(North_a, North_b, North_c)
+            Dim eastNormal = CalculateNormal(East_a, East_b, East_c)
+            Dim southNormal = CalculateNormal(South_a, South_b, South_c)
+            Dim westNormal = CalculateNormal(West_a, West_b, West_c)
+            Dim topNormal = CalculateNormal(Top_a, Top_b, Top_c)
+
             panelNormalsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
-            ("Bottom Panel", (0, 34, 0), bottom("c")),
-            ("North Panel", (0, 0, 1), North("b")),
-            ("East Panel", (33, 0, 0), East("b")),
-            ("South Panel", (0, 0, 30), South("b")),
-            ("West Panel", (-2, 0, 0), West("b")),
-            ("Top Panel", (0, 34, 0), Top("b"))
+            ("Bottom Panel", bottomNormal, Bottom_c), ' for detecting the orientation of the plane
+            ("North Panel", northNormal, North_c), ' in panelBounds.
+            ("East Panel", eastNormal, East_c),
+            ("South Panel", southNormal, South_c),
+            ("West Panel", westNormal, West_c),
+            ("Top Panel", topNormal, Top_c)
         }
 
 
 
 
         End Sub
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        Sub PrintNormal(panelName As String, p1 As (Integer, Integer, Integer), p2 As (Integer, Integer, Integer), p3 As (Integer, Integer, Integer))
-            Dim normal = CalculateNormal(p1, p2, p3)
-            Console.WriteLine("{0} Normal: ({1}, {2}, {3})", panelName, normal.Item1, normal.Item2, normal.Item3)
-        End Sub
-
         Function CalculateNormal(firstCorner As (Integer, Integer, Integer), secondCorner As (Integer, Integer, Integer), thirdCorner As (Integer, Integer, Integer)) As (Integer, Integer, Integer)
             Dim edgeVectorFirstToSecond = (secondCorner.Item1 - firstCorner.Item1, secondCorner.Item2 - firstCorner.Item2, secondCorner.Item3 - firstCorner.Item3)
             Dim edgeVectorFirstToThird = (thirdCorner.Item1 - firstCorner.Item1, thirdCorner.Item2 - firstCorner.Item2, thirdCorner.Item3 - firstCorner.Item3)

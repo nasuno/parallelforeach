@@ -16,7 +16,7 @@ Module Program
     Public panelsArray() As (PanelType As PanelType, FirstTuple As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
     'Public panelNormalsArray() As (PanelName As String, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
     Public panelNormalsArray() As (PanelType As PanelType, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
-    Public panelName_CornerArray() As (PanelName_Corner As String, Corner As (Integer, Integer, Integer))
+    Public panelName_CornerArray() As (PanelName_Corner As PanelCorner, Corner As (Integer, Integer, Integer))
     Dim panelData As New PanelDataManager
 
 
@@ -160,7 +160,7 @@ Module Program
 
                                                                         For Each panelType In intersections.Keys
                                                                             Dim panelIntersection = intersections(panelType)
-                                                                            Dim coords As String() = panelIntersection.ToString().Split(", ")
+                                                                            Dim coords As String() = panelIntersection.ToString().Split(", ") ' * It's likely we can split this vector with strings. **=><=**
 
                                                                             Try
                                                                                 Dim point As (Integer, Integer, Integer) = (CInt(coords(0)), CInt(coords(1)), CInt(coords(2)))
@@ -902,8 +902,6 @@ yolo:
 
 
 
-
-
     Public Class PanelDataManager
         Private CenterCoordinates As (centerX As Integer, centerY As Integer, centerZ As Integer)
 
@@ -944,6 +942,12 @@ yolo:
             populateCorners(CenterCoordinates)
         End Sub
 
+        Enum Corner
+            a
+            b
+            c
+            d
+        End Enum
         Sub populateCorners(center As (Integer, Integer, Integer))
 
             Const halfSideLength As Integer = 121
@@ -951,89 +955,89 @@ yolo:
             Dim B As (Integer, Integer, Integer) = (center.Item1 + halfSideLength, center.Item2, center.Item3 - halfSideLength) ' of the four points,
             Dim C As (Integer, Integer, Integer) = (center.Item1 + halfSideLength, center.Item2, center.Item3 + halfSideLength) ' without using fractions.
             Dim D As (Integer, Integer, Integer) = (center.Item1 - halfSideLength, center.Item2, center.Item3 + halfSideLength)
-            Dim bottom As New Dictionary(Of String, (Integer, Integer, Integer))
-            bottom.Add("a", A)
-            bottom.Add("b", B)
-            bottom.Add("c", C)
-            bottom.Add("d", D)
+            Dim bottom As New Dictionary(Of Corner, (Integer, Integer, Integer))
+            bottom.Add(Corner.a, A)
+            bottom.Add(Corner.b, B)
+            bottom.Add(Corner.c, C)
+            bottom.Add(Corner.d, D)
             Const elevation As Integer = 162
-            Dim Top As New Dictionary(Of String, (Integer, Integer, Integer))
-            Top.Add("c", (bottom("b").Item1, bottom("b").Item2 + elevation, bottom("b").Item3)) ' Top
-            Top.Add("d", (bottom("a").Item1, bottom("a").Item2 + elevation, bottom("a").Item3))
-            Top.Add("b", (bottom("c").Item1, bottom("c").Item2 + elevation, bottom("c").Item3))
-            Top.Add("a", (bottom("d").Item1, bottom("d").Item2 + elevation, bottom("d").Item3))
-            Dim North As New Dictionary(Of String, (Integer, Integer, Integer)) ' North
-            North.Add("c", bottom("b"))
-            North.Add("d", bottom("a"))
-            North.Add("b", (North("c").Item1, North("c").Item2 + elevation, North("c").Item3))
-            North.Add("a", (North("d").Item1, North("d").Item2 + elevation, North("d").Item3))
-            Dim South As New Dictionary(Of String, (Integer, Integer, Integer)) ' South
-            South.Add("c", bottom("d"))
-            South.Add("d", bottom("c"))
-            South.Add("b", (South("c").Item1, South("c").Item2 + elevation, South("c").Item3))
-            South.Add("a", (South("d").Item1, South("d").Item2 + elevation, South("d").Item3))
-            Dim West As New Dictionary(Of String, (Integer, Integer, Integer)) ' West
-            West.Add("c", bottom("a"))
-            West.Add("d", bottom("d"))
-            West.Add("b", (West("c").Item1, West("c").Item2 + elevation, West("c").Item3))
-            West.Add("a", (West("d").Item1, West("d").Item2 + elevation, West("d").Item3))
-            Dim East As New Dictionary(Of String, (Integer, Integer, Integer)) ' East
-            East.Add("c", bottom("c"))
-            East.Add("d", bottom("b"))
-            East.Add("b", (East("c").Item1, East("c").Item2 + elevation, East("c").Item3))
-            East.Add("a", (East("d").Item1, East("d").Item2 + elevation, East("d").Item3))
+            Dim Top As New Dictionary(Of Corner, (Integer, Integer, Integer))
+            Top.Add(Corner.c, (bottom(Corner.b).Item1, bottom(Corner.b).Item2 + elevation, bottom(Corner.b).Item3)) ' Top
+            Top.Add(Corner.d, (bottom(Corner.a).Item1, bottom(Corner.a).Item2 + elevation, bottom(Corner.a).Item3))
+            Top.Add(Corner.b, (bottom(Corner.c).Item1, bottom(Corner.c).Item2 + elevation, bottom(Corner.c).Item3))
+            Top.Add(Corner.a, (bottom(Corner.d).Item1, bottom(Corner.d).Item2 + elevation, bottom(Corner.d).Item3))
+            Dim North As New Dictionary(Of Corner, (Integer, Integer, Integer)) ' North
+            North.Add(Corner.c, bottom(Corner.b))
+            North.Add(Corner.d, bottom(Corner.a))
+            North.Add(Corner.b, (North(Corner.c).Item1, North(Corner.c).Item2 + elevation, North(Corner.c).Item3))
+            North.Add(Corner.a, (North(Corner.d).Item1, North(Corner.d).Item2 + elevation, North(Corner.d).Item3))
+            Dim South As New Dictionary(Of Corner, (Integer, Integer, Integer)) ' South
+            South.Add(Corner.c, bottom(Corner.d))
+            South.Add(Corner.d, bottom(Corner.c))
+            South.Add(Corner.b, (South(Corner.c).Item1, South(Corner.c).Item2 + elevation, South(Corner.c).Item3))
+            South.Add(Corner.a, (South(Corner.d).Item1, South(Corner.d).Item2 + elevation, South(Corner.d).Item3))
+            Dim West As New Dictionary(Of Corner, (Integer, Integer, Integer)) ' West
+            West.Add(Corner.c, bottom(Corner.a))
+            West.Add(Corner.d, bottom(Corner.d))
+            West.Add(Corner.b, (West(Corner.c).Item1, West(Corner.c).Item2 + elevation, West(Corner.c).Item3))
+            West.Add(Corner.a, (West(Corner.d).Item1, West(Corner.d).Item2 + elevation, West(Corner.d).Item3))
+            Dim East As New Dictionary(Of Corner, (Integer, Integer, Integer)) ' East
+            East.Add(Corner.c, bottom(Corner.c))
+            East.Add(Corner.d, bottom(Corner.b))
+            East.Add(Corner.b, (East(Corner.c).Item1, East(Corner.c).Item2 + elevation, East(Corner.c).Item3))
+            East.Add(Corner.a, (East(Corner.d).Item1, East(Corner.d).Item2 + elevation, East(Corner.d).Item3))
             ' only then 
-            Top("a") = (Top("a").Item1 + 1, Top("a").Item2, Top("a").Item3 - 1) ' Top
-            Top("b") = (Top("b").Item1 - 1, Top("b").Item2, Top("b").Item3 - 1) ' Axis adjustments
-            Top("c") = (Top("c").Item1 - 1, Top("c").Item2, Top("c").Item3 + 1)
-            Top("d") = (Top("d").Item1 + 1, Top("d").Item2, Top("d").Item3 + 1)
-            bottom("a") = (bottom("a").Item1 + 1, bottom("a").Item2, bottom("a").Item3 + 1) ' bottom
-            bottom("b") = (bottom("b").Item1 - 1, bottom("b").Item2, bottom("b").Item3 + 1)
-            bottom("c") = (bottom("c").Item1 - 1, bottom("c").Item2, bottom("c").Item3 - 1)
-            bottom("d") = (bottom("d").Item1 + 1, bottom("d").Item2, bottom("d").Item3 - 1)
-            West("a") = (West("a").Item1, West("a").Item2 - 1, West("a").Item3 - 1) ' West
-            West("b") = (West("b").Item1, West("b").Item2 - 1, West("b").Item3 + 1)
-            West("c") = (West("c").Item1, West("c").Item2 + 1, West("c").Item3 + 1)
-            West("d") = (West("d").Item1, West("d").Item2 + 1, West("d").Item3 - 1)
-            North("a") = (North("a").Item1 + 1, North("a").Item2 - 1, North("a").Item3) ' North
-            North("b") = (North("b").Item1 - 1, North("b").Item2 - 1, North("b").Item3)
-            North("c") = (North("c").Item1 - 1, North("c").Item2 + 1, North("c").Item3)
-            North("d") = (North("d").Item1 + 1, North("d").Item2 + 1, North("d").Item3)
-            South("a") = (South("a").Item1 - 1, South("a").Item2 - 1, South("a").Item3) ' South
-            South("b") = (South("b").Item1 + 1, South("b").Item2 - 1, South("b").Item3)
-            South("c") = (South("c").Item1 + 1, South("c").Item2 + 1, South("c").Item3)
-            South("d") = (South("d").Item1 - 1, South("d").Item2 + 1, South("d").Item3)
-            East("a") = (East("a").Item1, East("a").Item2 - 1, East("a").Item3 + 1) ' East
-            East("b") = (East("b").Item1, East("b").Item2 - 1, East("b").Item3 - 1)
-            East("c") = (East("c").Item1, East("c").Item2 + 1, East("c").Item3 - 1)
-            East("d") = (East("d").Item1, East("d").Item2 + 1, East("d").Item3 + 1)
+            Top(Corner.a) = (Top(Corner.a).Item1 + 1, Top(Corner.a).Item2, Top(Corner.a).Item3 - 1) ' Top
+            Top(Corner.b) = (Top(Corner.b).Item1 - 1, Top(Corner.b).Item2, Top(Corner.b).Item3 - 1) ' Axis adjustments
+            Top(Corner.c) = (Top(Corner.c).Item1 - 1, Top(Corner.c).Item2, Top(Corner.c).Item3 + 1)
+            Top(Corner.d) = (Top(Corner.d).Item1 + 1, Top(Corner.d).Item2, Top(Corner.d).Item3 + 1)
+            bottom(Corner.a) = (bottom(Corner.a).Item1 + 1, bottom(Corner.a).Item2, bottom(Corner.a).Item3 + 1) ' bottom
+            bottom(Corner.b) = (bottom(Corner.b).Item1 - 1, bottom(Corner.b).Item2, bottom(Corner.b).Item3 + 1)
+            bottom(Corner.c) = (bottom(Corner.c).Item1 - 1, bottom(Corner.c).Item2, bottom(Corner.c).Item3 - 1)
+            bottom(Corner.d) = (bottom(Corner.d).Item1 + 1, bottom(Corner.d).Item2, bottom(Corner.d).Item3 - 1)
+            West(Corner.a) = (West(Corner.a).Item1, West(Corner.a).Item2 - 1, West(Corner.a).Item3 - 1) ' West
+            West(Corner.b) = (West(Corner.b).Item1, West(Corner.b).Item2 - 1, West(Corner.b).Item3 + 1)
+            West(Corner.c) = (West(Corner.c).Item1, West(Corner.c).Item2 + 1, West(Corner.c).Item3 + 1)
+            West(Corner.d) = (West(Corner.d).Item1, West(Corner.d).Item2 + 1, West(Corner.d).Item3 - 1)
+            North(Corner.a) = (North(Corner.a).Item1 + 1, North(Corner.a).Item2 - 1, North(Corner.a).Item3) ' North
+            North(Corner.b) = (North(Corner.b).Item1 - 1, North(Corner.b).Item2 - 1, North(Corner.b).Item3)
+            North(Corner.c) = (North(Corner.c).Item1 - 1, North(Corner.c).Item2 + 1, North(Corner.c).Item3)
+            North(Corner.d) = (North(Corner.d).Item1 + 1, North(Corner.d).Item2 + 1, North(Corner.d).Item3)
+            South(Corner.a) = (South(Corner.a).Item1 - 1, South(Corner.a).Item2 - 1, South(Corner.a).Item3) ' South
+            South(Corner.b) = (South(Corner.b).Item1 + 1, South(Corner.b).Item2 - 1, South(Corner.b).Item3)
+            South(Corner.c) = (South(Corner.c).Item1 + 1, South(Corner.c).Item2 + 1, South(Corner.c).Item3)
+            South(Corner.d) = (South(Corner.d).Item1 - 1, South(Corner.d).Item2 + 1, South(Corner.d).Item3)
+            East(Corner.a) = (East(Corner.a).Item1, East(Corner.a).Item2 - 1, East(Corner.a).Item3 + 1) ' East
+            East(Corner.b) = (East(Corner.b).Item1, East(Corner.b).Item2 - 1, East(Corner.b).Item3 - 1)
+            East(Corner.c) = (East(Corner.c).Item1, East(Corner.c).Item2 + 1, East(Corner.c).Item3 - 1)
+            East(Corner.d) = (East(Corner.d).Item1, East(Corner.d).Item2 + 1, East(Corner.d).Item3 + 1)
 
 
 
-            Bottom_a = bottom("a")
-            Bottom_b = bottom("b")
-            Bottom_c = bottom("c")
-            Bottom_d = bottom("d")
-            Top_a = Top("a")
-            Top_b = Top("b")
-            Top_c = Top("c")
-            Top_d = Top("d")
-            North_a = North("a")
-            North_b = North("b")
-            North_c = North("c")
-            North_d = North("d")
-            South_a = South("a")
-            South_b = South("b")
-            South_c = South("c")
-            South_d = South("d")
-            West_a = West("a")
-            West_b = West("b")
-            West_c = West("c")
-            West_d = West("d")
-            East_a = East("a")
-            East_b = East("b")
-            East_c = East("c")
-            East_d = East("d")
+            Bottom_a = bottom(Corner.a) ' making public
+            Bottom_b = bottom(Corner.b)
+            Bottom_c = bottom(Corner.c)
+            Bottom_d = bottom(Corner.d)
+            Top_a = Top(Corner.a)
+            Top_b = Top(Corner.b)
+            Top_c = Top(Corner.c)
+            Top_d = Top(Corner.d)
+            North_a = North(Corner.a)
+            North_b = North(Corner.b)
+            North_c = North(Corner.c)
+            North_d = North(Corner.d)
+            South_a = South(Corner.a)
+            South_b = South(Corner.b)
+            South_c = South(Corner.c)
+            South_d = South(Corner.d)
+            West_a = West(Corner.a)
+            West_b = West(Corner.b)
+            West_c = West(Corner.c)
+            West_d = West(Corner.d)
+            East_a = East(Corner.a)
+            East_b = East(Corner.b)
+            East_c = East(Corner.c)
+            East_d = East(Corner.d)
 
             panelsArray = New(PanelType, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
             (PanelType.BottomPanel, Bottom_a, Bottom_c), ' for detecting the coordinates which are the ones the vector passes through  
@@ -1051,31 +1055,31 @@ yolo:
             (PanelType.WestPanel, CalculateNormal(West_a, West_b, West_c), West_c),
             (PanelType.TopPanel, CalculateNormal(Top_a, Top_b, Top_c), Top_c)}
 
-            panelName_CornerArray = New(String, (Integer, Integer, Integer))() {
-            ("Bottom_a", Bottom_a), ' =* For Universal Reference *=
-            ("Bottom_b", Bottom_b),
-            ("Bottom_c", Bottom_c),
-            ("Bottom_d", Bottom_d),
-            ("North_a", North_a),
-            ("North_b", North_b),
-            ("North_c", North_c),
-            ("North_d", North_d),
-            ("East_a", East_a),
-            ("East_b", East_b),
-            ("East_c", East_c),
-            ("East_d", East_d),
-            ("South_a", South_a),
-            ("South_b", South_b),
-            ("South_c", South_c),
-            ("South_d", South_d),
-            ("West_a", West_a),
-            ("West_b", West_b),
-            ("West_c", West_c),
-            ("West_d", West_d),
-            ("Top_a", Top_a),
-            ("Top_b", Top_b),
-            ("Top_c", Top_c),
-            ("Top_d", Top_d)}
+            panelName_CornerArray = New(PanelCorner, (Integer, Integer, Integer))() {
+            (PanelCorner.Bottom_a, Bottom_a), ' =* For Universal Reference *=
+            (PanelCorner.Bottom_b, Bottom_b),
+            (PanelCorner.Bottom_c, Bottom_c),
+            (PanelCorner.Bottom_d, Bottom_d),
+            (PanelCorner.North_a, North_a),
+            (PanelCorner.North_b, North_b),
+            (PanelCorner.North_c, North_c),
+            (PanelCorner.North_d, North_d),
+            (PanelCorner.East_a, East_a),
+            (PanelCorner.East_b, East_b),
+            (PanelCorner.East_c, East_c),
+            (PanelCorner.East_d, East_d),
+            (PanelCorner.South_a, South_a),
+            (PanelCorner.South_b, South_b),
+            (PanelCorner.South_c, South_c),
+            (PanelCorner.South_d, South_d),
+            (PanelCorner.West_a, West_a),
+            (PanelCorner.West_b, West_b),
+            (PanelCorner.West_c, West_c),
+            (PanelCorner.West_d, West_d),
+            (PanelCorner.Top_a, Top_a),
+            (PanelCorner.Top_b, Top_b),
+            (PanelCorner.Top_c, Top_c),
+            (PanelCorner.Top_d, Top_d)}
 
         End Sub
         Function CalculateNormal(firstCorner As (Integer, Integer, Integer), secondCorner As (Integer, Integer, Integer), thirdCorner As (Integer, Integer, Integer)) As (Integer, Integer, Integer)
@@ -1093,10 +1097,6 @@ yolo:
 
 
 
-
-
-
-
     Public Enum PanelType
         BottomPanel
         NorthPanel
@@ -1105,4 +1105,31 @@ yolo:
         WestPanel
         TopPanel
     End Enum
+    Public Enum PanelCorner
+        Bottom_a
+        Bottom_b
+        Bottom_c
+        Bottom_d
+        North_a
+        North_b
+        North_c
+        North_d
+        East_a
+        East_b
+        East_c
+        East_d
+        South_a
+        South_b
+        South_c
+        South_d
+        West_a
+        West_b
+        West_c
+        West_d
+        Top_a
+        Top_b
+        Top_c
+        Top_d
+    End Enum
+
 End Module

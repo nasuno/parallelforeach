@@ -10,12 +10,13 @@ Module Program
     Public userCoordinates As (Integer, Integer, Integer)
     Dim objectDictionary As New ConcurrentDictionary(Of Integer, MyObject)
     Dim uniqId As Integer = 0
-    'Public panelRecord As New Dictionary(Of String, Single)   ' ** i commented THIS I THINK IT'S REDUNDENT ** BETTER chec it
-    Dim objectsIntersectionDict As New ConcurrentDictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) ' objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
+    Dim objectsIntersectionDict As New ConcurrentDictionary(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double)))
+    ' *                                                                 ^^ objID whiteCoordinates(current objID coords) blackCoordinates(past objID coords)
 
-    Public panelsArray() As (PanelName As String, FirstTuple As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
-    Public panelNormalsArray() As (PanelName As String, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
-
+    Public panelsArray() As (PanelType As PanelType, FirstTuple As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
+    'Public panelNormalsArray() As (PanelName As String, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
+    Public panelNormalsArray() As (PanelType As PanelType, Normal As (Integer, Integer, Integer), SecondTuple As (Integer, Integer, Integer))
+    Public panelName_CornerArray() As (PanelName_Corner As String, Corner As (Integer, Integer, Integer))
     Dim panelData As New PanelDataManager
 
 
@@ -23,8 +24,8 @@ Module Program
         Public Shared Sub Main()
 
             ' =Load 3D objects=
-            CreateAndAddPregeneratedObjects()
-            'CreateUCSIcon()
+            'CreateAndAddPregeneratedObjects()
+            CreateUCSIcon()
             'CreateBarExtensions()
             Console.WriteLine("3D objects loaded")
 
@@ -127,11 +128,6 @@ Module Program
                         'Console.WriteLine(objectDictionary.Count.ToString)
 
                         Dim bounds As New PanelBounds()
-
-
-
-
-
                         Parallel.ForEach(objectDictionary.Keys, Sub(objectID)
 
                                                                     Dim obj As MyObject = Nothing
@@ -144,24 +140,14 @@ Module Program
 
                                                                         Dim rayPnt As (Integer, Integer, Integer) = (x, y, z)
 
-                                                                        Dim intersections As New Dictionary(Of String, Vector3D)
-
-                                                                        'Dim panels = PanelDataManager.Normals ' * Change name of PanelDataManager * FFS manager really?
-
-                                                                        '                                                                        Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-                                                                        '("North Panel", (0, 0, 1), (-370, 74, -199)),
-                                                                        '("East Panel", (33, 0, 0), (-129, 74, -198)), ' we need to be sending around an dictionary that contains the elements needed for-and-by the parallel-foreach **=**
-                                                                        '("South Panel", (0, 0, 30), (-130, 74, 43)),
-                                                                        '("West Panel", (-2, 0, 0), (-371, 74, 42)),
-                                                                        '("Top Panel", (0, 34, 0), (-370, 235, -198)),
-                                                                        '("Bottom Panel", (0, 34, 0), (-370, 73, -198))}
+                                                                        Dim intersections As New Dictionary(Of PanelType, Vector3D)
 
                                                                         For Each panel In panelNormalsArray
                                                                             Dim intersect = GetIntersection(rayPnt, userCoordinates, panel.Item2, panel.Item3)
-                                                                            Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
+                                                                            ' Console.WriteLine("Intersection for {0}: {1}, Intersection exists: {2}", panel.Item1, intersect.Item1, intersect.Item2)
 
                                                                             If intersect.Item2 Then
-                                                                                intersections.Add(panel.Item1, intersect.Item1)
+                                                                                intersections.Add(panel.PanelType, intersect.Item1)
                                                                             End If
                                                                         Next
 
@@ -170,19 +156,19 @@ Module Program
                                                                             ' Console.WriteLine("{0} intersection point: {1}", panelName, panelIntersection)
                                                                         Next
 
-                                                                        Dim intersectionsWithinBounds As New Dictionary(Of String, Vector3D)()
+                                                                        Dim intersectionsWithinBounds As New Dictionary(Of PanelType, Vector3D)()
 
-                                                                        For Each panelName In intersections.Keys
-                                                                            Dim panelIntersection = intersections(panelName)
+                                                                        For Each panelType In intersections.Keys
+                                                                            Dim panelIntersection = intersections(panelType)
                                                                             Dim coords As String() = panelIntersection.ToString().Split(", ")
 
                                                                             Try
                                                                                 Dim point As (Integer, Integer, Integer) = (CInt(coords(0)), CInt(coords(1)), CInt(coords(2)))
-                                                                                Dim isWithinBounds As Boolean = bounds.IsPointWithinPanel(panelName, point)
+                                                                                Dim isWithinBounds As Boolean = bounds.IsPointWithinPanel(panelType, point)
                                                                                 ' Console.WriteLine($"{panelName} intersection point {panelIntersection} is within bounds: {isWithinBounds}")
 
                                                                                 If isWithinBounds Then
-                                                                                    intersectionsWithinBounds.Add(panelName, panelIntersection)
+                                                                                    intersectionsWithinBounds.Add(panelType, panelIntersection)
                                                                                 End If
                                                                             Catch e As OverflowException ' Handle the exception
                                                                                 'Console.WriteLine("One of the coordinates is too large or too small to fit into an integer.")
@@ -195,8 +181,8 @@ Module Program
                                                                             ' Console.WriteLine($"Panel: {kvp.Key}, Intersection: {kvp.Value}")
                                                                         Next
 
-                                                                        Dim points As Dictionary(Of String, (Integer, Integer, Integer)) = intersectionsWithinBounds.ToDictionary(Function(pair) pair.Key, Function(pair) pair.Value.ToIntTuple())
-                                                                        Dim distances As Dictionary(Of String, Single) = points.ToDictionary(Function(pair) pair.Key, Function(pair) CalculateFastDistance(rayPnt, pair.Value))
+                                                                        Dim points As Dictionary(Of PanelType, (Integer, Integer, Integer)) = intersectionsWithinBounds.ToDictionary(Function(pair) pair.Key, Function(pair) pair.Value.ToIntTuple())
+                                                                        Dim distances As Dictionary(Of PanelType, Single) = points.ToDictionary(Function(pair) pair.Key, Function(pair) CalculateFastDistance(rayPnt, pair.Value))
                                                                         Dim minDistance As Single = Single.MaxValue
                                                                         Dim minDistanceCoordinate As (Integer, Integer, Integer) = (0, 0, 0)
 
@@ -229,14 +215,9 @@ Module Program
 
                                                                     End If
 
-
-
-
                                                                 End Sub)
 
-
-                        ' HashSets to store unique current and previous coordinates explicitly.
-                        Dim uniqueCurrentCoordinatesSet As New HashSet(Of String)
+                        Dim uniqueCurrentCoordinatesSet As New HashSet(Of String) ' HashSets to store unique current and previous coordinates explicitly.
                         Dim uniquePreviousCoordinatesSet As New HashSet(Of String)
 
                         For Each item As KeyValuePair(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double)))
@@ -244,7 +225,7 @@ Module Program
                             ' Add the current coordinates as strings in the HashSet to ensure uniqueness.
                             uniqueCurrentCoordinatesSet.Add($"{item.Value.Item1.X},{item.Value.Item1.Y},{item.Value.Item1.Z}")
 
-                            ' Add the previous coordinates as strings in the HashSet to ensure uniqueness.
+                            ' *      previous 
                             uniquePreviousCoordinatesSet.Add($"{item.Value.Item2.X},{item.Value.Item2.Y},{item.Value.Item2.Z}")
 
                         Next
@@ -260,9 +241,7 @@ Module Program
                                 currentCoordinatesSb.Append(";")
                             End If
 
-                            'If CheckDifference(coordinate, pixelType.white) Then
                             currentCoordinatesSb.Append(coordinate)
-                            'End If
 
                         Next
 
@@ -271,9 +250,7 @@ Module Program
                                 previousCoordinatesSb.Append(";")
                             End If
 
-                            'If CheckDifference(coordinate, pixelType.black) Then
                             previousCoordinatesSb.Append(coordinate)
-                            'End If
 
                         Next
 
@@ -335,7 +312,7 @@ Module Program
                     Dim nanosecondsPerTick As Double = (1000000000.0 / Stopwatch.Frequency)
                     Dim elapsedNanoseconds As Double = ticks * nanosecondsPerTick
                     Dim elapsedMilliseconds As Double = elapsedNanoseconds / 1000000.0
-                    Console.WriteLine(elapsedMilliseconds)
+                    'Console.WriteLine(elapsedMilliseconds)
 
 
 
@@ -356,7 +333,7 @@ Module Program
     ' ============== MOVE TO 3D APP ================
     Sub CreateUCSIcon()
         Dim i As Integer
-        For i = 0 To 150 Step 1
+        For i = 0 To 5000 Step 1
             AddMyObjectToFactory(i, 0, 0) ' Points on X-axis
             AddMyObjectToFactory(0, i, 0) ' Points on Y-axis
             AddMyObjectToFactory(0, 0, i) ' Points on Z-axis
@@ -495,20 +472,12 @@ Module Program
 
 
 
+
     Public Class PanelBounds
-        Private ReadOnly _precalculatedBounds As Dictionary(Of String, (Integer, Integer, Integer, Integer, Integer, Integer))
+        Private ReadOnly _precalculatedBounds As Dictionary(Of PanelType, (Integer, Integer, Integer, Integer, Integer, Integer))
+
         Public Sub New()
-
-            'Dim panels As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-            '    ("North Panel", (-370, 74, -199), (-130, 234, -199)),
-            '    ("East Panel", (-129, 74, -198), (-129, 234, 43)),
-            '    ("South Panel", (-130, 74, 43), (-370, 234, 43)),
-            '    ("West Panel", (-371, 74, 42), (-371, 234, -198)),
-            '    ("Top Panel", (-370, 235, -198), (-130, 235, 43)),
-            '    ("Bottom Panel", (-370, 73, -198), (-130, 73, 43))
-            '}
-
-            _precalculatedBounds = panelsArray.ToDictionary(Function(panel) panel.Item1, Function(panel) CalculateMinMaxBounds(panel.Item2, panel.Item3))
+            _precalculatedBounds = panelsArray.ToDictionary(Function(panel) panel.PanelType, Function(panel) CalculateMinMaxBounds(panel.Item2, panel.Item3))
         End Sub
 
         Private Function CalculateMinMaxBounds(corner1 As (Integer, Integer, Integer), corner2 As (Integer, Integer, Integer)) As (Integer, Integer, Integer, Integer, Integer, Integer)
@@ -522,12 +491,12 @@ Module Program
             Return (minX, maxX, minY, maxY, minZ, maxZ)
         End Function
 
-        Public Function IsPointWithinPanel(panelName As String, point As (Integer, Integer, Integer)) As Boolean
-            If _precalculatedBounds.ContainsKey(panelName) Then
-                Dim bounds = _precalculatedBounds(panelName)
+        Public Function IsPointWithinPanel(panelType As PanelType, point As (Integer, Integer, Integer)) As Boolean
+            If _precalculatedBounds.ContainsKey(panelType) Then
+                Dim bounds = _precalculatedBounds(panelType)
                 Return (point.Item1 >= bounds.Item1) AndAlso (point.Item1 <= bounds.Item2) AndAlso (point.Item2 >= bounds.Item3) AndAlso (point.Item2 <= bounds.Item4) AndAlso (point.Item3 >= bounds.Item5) AndAlso (point.Item3 <= bounds.Item6)
             Else
-                Throw New ArgumentException($"Invalid panel name: {panelName}")
+                Throw New ArgumentException($"Invalid panel type: {panelType}") ' trim this, For Kirk's sake.
             End If
         End Function
 
@@ -938,67 +907,44 @@ yolo:
     Public Class PanelDataManager
         Private CenterCoordinates As (centerX As Integer, centerY As Integer, centerZ As Integer)
 
-
-        Public Shared North_a As (Integer, Integer, Integer)
-        Public Shared North_b As (Integer, Integer, Integer)
-        Public Shared North_c As (Integer, Integer, Integer)
-        Public Shared North_d As (Integer, Integer, Integer)
-        Public Shared South_a As (Integer, Integer, Integer)
-        Public Shared South_b As (Integer, Integer, Integer)
-        Public Shared South_c As (Integer, Integer, Integer)
-        Public Shared South_d As (Integer, Integer, Integer)
-        Public Shared West_a As (Integer, Integer, Integer)
-        Public Shared West_b As (Integer, Integer, Integer)
-        Public Shared West_c As (Integer, Integer, Integer)
-        Public Shared West_d As (Integer, Integer, Integer)
-        Public Shared East_a As (Integer, Integer, Integer)
-        Public Shared East_b As (Integer, Integer, Integer)
-        Public Shared East_c As (Integer, Integer, Integer)
-        Public Shared East_d As (Integer, Integer, Integer)
-        Public Shared Top_a As (Integer, Integer, Integer)
-        Public Shared Top_b As (Integer, Integer, Integer)
-        Public Shared Top_c As (Integer, Integer, Integer)
-        Public Shared Top_d As (Integer, Integer, Integer)
-        Public Shared Bottom_a As (Integer, Integer, Integer)
-        Public Shared Bottom_b As (Integer, Integer, Integer)
-        Public Shared Bottom_c As (Integer, Integer, Integer)
-        Public Shared Bottom_d As (Integer, Integer, Integer)
+        Public North_a As (Integer, Integer, Integer)
+        Public North_b As (Integer, Integer, Integer)
+        Public North_c As (Integer, Integer, Integer)
+        Public North_d As (Integer, Integer, Integer)
+        Public South_a As (Integer, Integer, Integer)
+        Public South_b As (Integer, Integer, Integer)
+        Public South_c As (Integer, Integer, Integer)
+        Public South_d As (Integer, Integer, Integer)
+        Public West_a As (Integer, Integer, Integer)
+        Public West_b As (Integer, Integer, Integer)
+        Public West_c As (Integer, Integer, Integer)
+        Public West_d As (Integer, Integer, Integer)
+        Public East_a As (Integer, Integer, Integer)
+        Public East_b As (Integer, Integer, Integer)
+        Public East_c As (Integer, Integer, Integer)
+        Public East_d As (Integer, Integer, Integer)
+        Public Top_a As (Integer, Integer, Integer)
+        Public Top_b As (Integer, Integer, Integer)
+        Public Top_c As (Integer, Integer, Integer)
+        Public Top_d As (Integer, Integer, Integer)
+        Public Bottom_a As (Integer, Integer, Integer)
+        Public Bottom_b As (Integer, Integer, Integer)
+        Public Bottom_c As (Integer, Integer, Integer)
+        Public Bottom_d As (Integer, Integer, Integer)
 
         Public Sub New()
-            Console.Write("Enter the X coordinate of the center: ")
+            Console.Write("Enter the X coordinate of the center -575: ")
             Dim centerX As Integer = Convert.ToInt32(Console.ReadLine()) ' -250 ' -575
-            Console.Write("Enter the Y coordinate of the center: ")
+            Console.Write("Enter the Y coordinate of the center 81: ")
             Dim centerY As Integer = Convert.ToInt32(Console.ReadLine()) ' 73   ' 81
-            Console.Write("Enter the Z coordinate of the center: ")
+            Console.Write("Enter the Z coordinate of the center -512: ")
             Dim centerZ As Integer = Convert.ToInt32(Console.ReadLine()) ' -78  ' -512
 
             CenterCoordinates = (centerX, centerY, centerZ)
             populateCorners(CenterCoordinates)
         End Sub
 
-
-        '    Public Shared Normals As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = { ' should we make a topmost dim for holding these and then 
-        '    ("North Panel", (0, 0, 1), (North_d)), 'instead of creating these shared ones we send this individual datas to the new 
-        '    ("East Panel", (33, 0, 0), (East_d)),
-        '    ("South Panel", (0, 0, 30), (South_d)), ' use add to get the values NEW into array
-        '    ("West Panel", (-2, 0, 0), (West_d)), ' ensure that it is a in working order and not accumulating data each frame.
-        '    ("Top Panel", (0, 34, 0), (Top_d)),
-        '    ("Bottom Panel", (0, 34, 0), (Bottom_a))
-        '}
-
-
-        '    Public Shared PanelCorners As (String, (Integer, Integer, Integer), (Integer, Integer, Integer))() = {
-        '    ("North Panel", (North_d), (North_b)),
-        '    ("East Panel", (East_d), (East_b)), ' yea create each individual row of this tuple (string, int-tuple, int-tuple)
-        '    ("South Panel", (South_d), (South_b)), ' and do the add to topmost dim.array
-        '    ("West Panel", (West_d), (West_b)),
-        '    ("Top Panel", (Top_d), (Top_b)), ' so we wont be making these or doing this here
-        '    ("Bottom Panel", (Bottom_a), (Bottom_c)) ' do it below where these get these data.
-        '}
-
-
         Sub populateCorners(center As (Integer, Integer, Integer))
-
 
             Const halfSideLength As Integer = 121
             Dim A As (Integer, Integer, Integer) = (center.Item1 - halfSideLength, center.Item2, center.Item3 - halfSideLength) ' Calculate the coordinates
@@ -1062,7 +1008,9 @@ yolo:
             East("c") = (East("c").Item1, East("c").Item2 + 1, East("c").Item3 - 1)
             East("d") = (East("d").Item1, East("d").Item2 + 1, East("d").Item3 + 1)
 
-            Bottom_a = bottom("a") ' Set As Shared
+
+
+            Bottom_a = bottom("a")
             Bottom_b = bottom("b")
             Bottom_c = bottom("c")
             Bottom_d = bottom("d")
@@ -1087,33 +1035,47 @@ yolo:
             East_c = East("c")
             East_d = East("d")
 
-            panelsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
-            ("Bottom Panel", bottom("a"), bottom("c")), ' for detecting the coordinates which are the ones the vector passes through  
-            ("North Panel", North("d"), North("b")), ' from the point in question ->thru the viewer.
-            ("East Panel", East("d"), East("b")),
-            ("South Panel", South("d"), South("b")),
-            ("West Panel", West("d"), West("b")),
-            ("Top Panel", Top("d"), Top("b"))
-        }
+            panelsArray = New(PanelType, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
+            (PanelType.BottomPanel, Bottom_a, Bottom_c), ' for detecting the coordinates which are the ones the vector passes through  
+            (PanelType.NorthPanel, North_d, North_b), ' from the point in question ->thru the viewer.
+            (PanelType.EastPanel, East_d, East_b),
+            (PanelType.SouthPanel, South_d, South_b),
+            (PanelType.WestPanel, West_d, West_b),
+            (PanelType.TopPanel, Top_d, Top_b)}
 
-            Dim bottomNormal = CalculateNormal(Bottom_a, Bottom_b, Bottom_c)
-            Dim northNormal = CalculateNormal(North_a, North_b, North_c)
-            Dim eastNormal = CalculateNormal(East_a, East_b, East_c)
-            Dim southNormal = CalculateNormal(South_a, South_b, South_c)
-            Dim westNormal = CalculateNormal(West_a, West_b, West_c)
-            Dim topNormal = CalculateNormal(Top_a, Top_b, Top_c)
+            panelNormalsArray = New(PanelType, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
+            (PanelType.BottomPanel, CalculateNormal(Bottom_a, Bottom_b, Bottom_c), Bottom_c), ' for detecting the orientation of the plane
+            (PanelType.NorthPanel, CalculateNormal(North_a, North_b, North_c), North_c), ' in panelBounds.
+            (PanelType.EastPanel, CalculateNormal(East_a, East_b, East_c), East_c),
+            (PanelType.SouthPanel, CalculateNormal(South_a, South_b, South_c), South_c),
+            (PanelType.WestPanel, CalculateNormal(West_a, West_b, West_c), West_c),
+            (PanelType.TopPanel, CalculateNormal(Top_a, Top_b, Top_c), Top_c)}
 
-            panelNormalsArray = New(String, (Integer, Integer, Integer), (Integer, Integer, Integer))() {
-            ("Bottom Panel", bottomNormal, Bottom_c), ' for detecting the orientation of the plane
-            ("North Panel", northNormal, North_c), ' in panelBounds.
-            ("East Panel", eastNormal, East_c),
-            ("South Panel", southNormal, South_c),
-            ("West Panel", westNormal, West_c),
-            ("Top Panel", topNormal, Top_c)
-        }
-
-
-
+            panelName_CornerArray = New(String, (Integer, Integer, Integer))() {
+            ("Bottom_a", Bottom_a), ' =* For Universal Reference *=
+            ("Bottom_b", Bottom_b),
+            ("Bottom_c", Bottom_c),
+            ("Bottom_d", Bottom_d),
+            ("North_a", North_a),
+            ("North_b", North_b),
+            ("North_c", North_c),
+            ("North_d", North_d),
+            ("East_a", East_a),
+            ("East_b", East_b),
+            ("East_c", East_c),
+            ("East_d", East_d),
+            ("South_a", South_a),
+            ("South_b", South_b),
+            ("South_c", South_c),
+            ("South_d", South_d),
+            ("West_a", West_a),
+            ("West_b", West_b),
+            ("West_c", West_c),
+            ("West_d", West_d),
+            ("Top_a", Top_a),
+            ("Top_b", Top_b),
+            ("Top_c", Top_c),
+            ("Top_d", Top_d)}
 
         End Sub
         Function CalculateNormal(firstCorner As (Integer, Integer, Integer), secondCorner As (Integer, Integer, Integer), thirdCorner As (Integer, Integer, Integer)) As (Integer, Integer, Integer)
@@ -1135,5 +1097,12 @@ yolo:
 
 
 
-
+    Public Enum PanelType
+        BottomPanel
+        NorthPanel
+        EastPanel
+        SouthPanel
+        WestPanel
+        TopPanel
+    End Enum
 End Module

@@ -160,21 +160,18 @@ Module Program
 
                                                                         For Each panelType In intersections.Keys
                                                                             Dim panelIntersection = intersections(panelType)
-                                                                            Dim coords As String() = panelIntersection.ToString().Split(", ") ' * It's likely we can split this vector with strings. **=><=**
+                                                                            Dim coords = panelIntersection.ToTuple()
 
                                                                             Try
-                                                                                Dim point As (Integer, Integer, Integer) = (CInt(coords(0)), CInt(coords(1)), CInt(coords(2)))
+                                                                                Dim point As (Integer, Integer, Integer) = (CInt(coords.x), CInt(coords.y), CInt(coords.z))
                                                                                 Dim isWithinBounds As Boolean = bounds.IsPointWithinPanel(panelType, point)
-                                                                                ' Console.WriteLine($"{panelName} intersection point {panelIntersection} is within bounds: {isWithinBounds}")
 
                                                                                 If isWithinBounds Then
                                                                                     intersectionsWithinBounds.Add(panelType, panelIntersection)
                                                                                 End If
-                                                                            Catch e As OverflowException ' Handle the exception
-                                                                                'Console.WriteLine("One of the coordinates is too large or too small to fit into an integer.")
-                                                                                'Do nothing
+                                                                            Catch e As OverflowException
+                                                                                ' Handle the exception
                                                                             End Try
-
                                                                         Next
 
                                                                         For Each kvp In intersectionsWithinBounds
@@ -367,12 +364,12 @@ Module Program
     Sub CreateAndAddPregeneratedObjects()
         AddMyObjectToFactory(0, 0, 0) ' zero point of all UCS axes
 #Region "one_coord_per_panel"
-        'AddMyObjectToFactory(-258, 147, 339)
-        'AddMyObjectToFactory(-664, 147, -78)
-        'AddMyObjectToFactory(-255, 147, -493)
-        'AddMyObjectToFactory(168, 147, -74)
-        'AddMyObjectToFactory(-250, 300, -78)
-        'AddMyObjectToFactory(-250, -75, -78)
+        AddMyObjectToFactory(-258, 147, 339)
+        AddMyObjectToFactory(-664, 147, -78)
+        AddMyObjectToFactory(-255, 147, -493)
+        AddMyObjectToFactory(168, 147, -74)
+        AddMyObjectToFactory(-250, 300, -78)
+        AddMyObjectToFactory(-250, -75, -78)
 #End Region
     End Sub
     Sub AddMyObjectToFactory(x As Integer, y As Integer, z As Integer)
@@ -536,6 +533,12 @@ Module Program
         Public Function ToIntTuple() As (Integer, Integer, Integer)
             Return (CInt(Fix(x)), CInt(Fix(y)), CInt(Fix(z)))
         End Function
+
+        Public Function ToTuple() As (x As Double, y As Double, z As Double)
+            Return (Math.Round(x, 2), Math.Round(y, 2), Math.Round(z, 2))
+        End Function
+
+
     End Class
 #End Region
 
@@ -605,6 +608,7 @@ yolo:
                 Console.WriteLine("Current Time: ")
                 Dim dt As Date = Now
                 Console.WriteLine("Time is: {0}", dt)
+                Thread.Sleep(200) ' Milliseconds
                 GoTo yolo
         End Select
 

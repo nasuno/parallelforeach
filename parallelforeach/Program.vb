@@ -214,41 +214,32 @@ Module Program
 
                                                                 End Sub)
 
-                        Dim uniqueCurrentCoordinatesSet As New HashSet(Of String) ' HashSets to store unique current and previous coordinates explicitly.
-                        Dim uniquePreviousCoordinatesSet As New HashSet(Of String)
-
-                        For Each item As KeyValuePair(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double)))
-                                    In objectsIntersectionDict
-                            ' Add the current coordinates as strings in the HashSet to ensure uniqueness.
-                            uniqueCurrentCoordinatesSet.Add($"{item.Value.Item1.X},{item.Value.Item1.Y},{item.Value.Item1.Z}")
-
-                            ' *      previous 
-                            uniquePreviousCoordinatesSet.Add($"{item.Value.Item2.X},{item.Value.Item2.Y},{item.Value.Item2.Z}")
-
-                        Next
-
                         ' == difference engine work here ==   
 
+                        Dim uniqueCurrentCoordinatesSet As New HashSet(Of (Double, Double, Double)) ' HashSets to store unique current and previous coordinates explicitly.
+                        Dim uniquePreviousCoordinatesSet As New HashSet(Of (Double, Double, Double))
+                        For Each item As KeyValuePair(Of Integer, Tuple(Of (X As Double, Y As Double, Z As Double), (X As Double, Y As Double, Z As Double))) In objectsIntersectionDict
+                            ' Add the current coordinates as strings in the HashSet to ensure uniqueness.
+                            uniqueCurrentCoordinatesSet.Add((item.Value.Item1.X, item.Value.Item1.Y, item.Value.Item1.Z))
 
-                        Dim currentCoordinatesSb As New StringBuilder()
-                        Dim previousCoordinatesSb As New StringBuilder()
+                            ' *      previous 
+                            uniquePreviousCoordinatesSet.Add((item.Value.Item2.X, item.Value.Item2.Y, item.Value.Item2.Z))
+                        Next
 
-                        For Each coordinate As String In uniqueCurrentCoordinatesSet ' * WHITE
+                        Dim currentCoordinatesSb As New StringBuilder() ' * WHITE
+                        For Each coordinate As (Double, Double, Double) In uniqueCurrentCoordinatesSet
                             If currentCoordinatesSb.Length > 0 Then
                                 currentCoordinatesSb.Append(";")
                             End If
-
-                            currentCoordinatesSb.Append(coordinate)
-
+                            currentCoordinatesSb.Append($"{coordinate.Item1},{coordinate.Item2},{coordinate.Item3}")
                         Next
 
-                        For Each coordinate As String In uniquePreviousCoordinatesSet ' * BLACK
+                        Dim previousCoordinatesSb As New StringBuilder() ' * BLACK
+                        For Each coordinate As (Double, Double, Double) In uniquePreviousCoordinatesSet
                             If previousCoordinatesSb.Length > 0 Then
                                 previousCoordinatesSb.Append(";")
                             End If
-
-                            previousCoordinatesSb.Append(coordinate)
-
+                            previousCoordinatesSb.Append($"{coordinate.Item1},{coordinate.Item2},{coordinate.Item3}")
                         Next
 
                         Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)

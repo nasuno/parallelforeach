@@ -242,6 +242,7 @@ Module Program
                             previousCoordinatesSb.Append($"{coordinate.Item1},{coordinate.Item2},{coordinate.Item3}")
                         Next
 
+
                         Dim coordinatesTuple2 As Tuple(Of StringBuilder, StringBuilder) = New Tuple(Of StringBuilder, StringBuilder)(currentCoordinatesSb, previousCoordinatesSb)
 
 
@@ -599,7 +600,7 @@ yolo:
                 Console.WriteLine("Current Time: ")
                 Dim dt As Date = Now
                 Console.WriteLine("Time is: {0}", dt)
-                Thread.Sleep(200) ' Milliseconds
+                Thread.Sleep(50) ' Milliseconds
                 GoTo yolo
         End Select
 

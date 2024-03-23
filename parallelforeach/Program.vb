@@ -23,6 +23,7 @@ Module Program
     Public Class Program
         Public Shared Sub Main()
 
+
             ' =Load 3D objects=
             'CreateAndAddPregeneratedObjects()
             CreateUCSIcon()
@@ -328,6 +329,12 @@ Module Program
             AddMyObjectToFactory(0, 0, i) ' Points on Z-axis
         Next i
     End Sub
+
+    Sub CreateTestObject()
+
+    End Sub
+
+
     Sub CreateBarExtensions()
         AddMyObjectToFactory(-129, 160, -69)
         AddMyObjectToFactory(-128, 160, -69)

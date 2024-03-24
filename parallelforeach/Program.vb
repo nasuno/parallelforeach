@@ -150,7 +150,6 @@ Module Program
                                                                     Dim obj As MyObject = Nothing
                                                                     If objectDictionary.TryGetValue(objectID, obj) Then
 
-                                                                        ' Your processing logic here
                                                                         Dim x As Long = obj.Location.X
                                                                         Dim y As Long = obj.Location.Y
                                                                         Dim z As Long = obj.Location.Z
@@ -406,10 +405,7 @@ Module Program
         ' Recursively refine connections
         RefineConnections(connections, points3d)
 
-
         ' ===================================
-
-
 
         ' Print refined connections
         For Each kvp As KeyValuePair(Of Integer, List(Of Integer)) In connections
@@ -424,42 +420,15 @@ Module Program
             Next
 
         Next
-        '                                          ^^ there are duplicate lines, address this.
-
-
-
-        ' ================================
-
-
-        ' Assuming the Vector3D class has a constructor that takes x, y, z as parameters
-        ' And Point3D class has properties ID, X, Y, Z
-
-        'Dim pointsDictionary As New Dictionary(Of Integer, Vector3D_struct)
-
-        'For Each point As Point3D In points3d
-        ' pointsDictionary.Add(point.Id, New Vector3D_struct(point.X, point.Y, point.Z))
-        ' Next
-
-
 
         ' ==================================================
 
-
-
-        ' User input for spacing
         Console.WriteLine("Enter the spacing for the jagged line:")
         Dim spacing As Integer = Convert.ToInt32(Console.ReadLine())
-
-        ' Viewer's position
         Console.WriteLine("Enter viewer's X, Y, Z coordinates separated by space (e.g., 10 20 30):")
         Dim viewerInput As String = Console.ReadLine()
         Dim viewerCoords As String() = viewerInput.Split(" "c)
         Dim viewer As New Vector3D_struct(Convert.ToDouble(viewerCoords(0)), Convert.ToDouble(viewerCoords(1)), Convert.ToDouble(viewerCoords(2)))
-
-        ' Define points based on the provided data   **** done below ***
-
-        ' Assuming the Vector3D class has a constructor that takes x, y, z as parameters
-        ' And Point3D class has properties ID, X, Y, Z
 
         Dim points As New Dictionary(Of Integer, Vector3D_struct)
 
@@ -467,11 +436,6 @@ Module Program
             points.Add(point.Id, New Vector3D_struct(point.X, point.Y, point.Z))
         Next
 
-
-
-        ' Define lines based on the provided data   **** done
-
-        ' User input for line to draw
         Console.WriteLine("Enter the line number to draw:")
         Dim lineNumber As Integer = Convert.ToInt32(Console.ReadLine())
 
@@ -489,34 +453,20 @@ Module Program
                 destination = temp
             End If
 
-            ' Call the interpolation method
             Dim interpolatedPoints = InterpolateLine(origin, destination, spacing)
-
-            ' Display the interpolated points
-            Console.WriteLine($"Interpolated points for line {lineNumber}:")
-
-
-            'For Each point In interpolatedPoints
-            '    Dim newTuple2 = point.ToIntTuple
-
-            '    Dim newTuple As (Integer, Integer, Integer) = (newTuple2.Item1, newTuple2.Item2, newTuple2.Item3)
-
-            '    myTupleList.Add(newTuple)
-            'Next
+            ' Console.WriteLine($"Interpolated points for line {lineNumber}:")
             ' ====================================================================================
 
-
             For Each point In interpolatedPoints
+                Dim newTuple2 = point.ToIntTuple
 
-                Console.WriteLine($"({point.X}, {point.Y}, {point.Z})")
+                Dim newTuple As (Integer, Integer, Integer) = (newTuple2.Item1, newTuple2.Item2, newTuple2.Item3)
 
+                ' Console.WriteLine($"({point.X}, {point.Y}, {point.Z})")
+                myTupleList.Add(newTuple)
             Next
 
-
-
-            ' ========================================================================================
-
-
+            ' ====================================================================================
         Else
             Console.WriteLine("Invalid line number.")
         End If

@@ -8,7 +8,7 @@ Imports Timer = System.Timers.Timer
 
 
 Module Program
-    Public myTupleList As New List(Of (Integer, Integer, Integer))
+    Public myTupleList As New List(Of (Integer, Integer, Integer)) ' Needs a rename something fierce! and a fierce name at that.
     Dim app3D As New App_3D()
 
     Public userCoordinates As (Integer, Integer, Integer)
@@ -337,7 +337,7 @@ Module Program
 
 
 
-    ' ============== MOVE TO 3D APP ================
+#Region "test objects"
     Sub CreateUCSIcon()
         Dim i As Integer
         For i = 0 To 500 Step 1
@@ -346,35 +346,6 @@ Module Program
             AddMyObjectToFactory(0, 0, i) ' Points on Z-axis
         Next i
     End Sub
-
-
-
-
-
-
-    ' ===============================
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     Sub CreateBarExtensions()
         AddMyObjectToFactory(-129, 160, -69)
@@ -403,7 +374,6 @@ Module Program
     End Sub
     Sub CreateAndAddPregeneratedObjects()
         AddMyObjectToFactory(0, 0, 0) ' zero point of all UCS axes
-#Region "one_coord_per_panel"
         AddMyObjectToFactory(-258, 147, 339)
         AddMyObjectToFactory(-664, 147, -78)
         AddMyObjectToFactory(-255, 147, -493)
@@ -411,7 +381,12 @@ Module Program
         AddMyObjectToFactory(-250, 300, -78)
         AddMyObjectToFactory(-250, -75, -78)
 #End Region
+
+
+
+
     End Sub
+
     Sub AddMyObjectToFactory(x As Integer, y As Integer, z As Integer)
         Dim key As Integer = GetNextUniqId()
         Dim location As New Coordinates3D(x, y, z)
@@ -422,7 +397,7 @@ Module Program
         uniqId += 1
         Return uniqId
     End Function
-    ' ================ END OF MOVE TO 3D APP ===================
+
 
     Public Class Coordinates3D
         Public Property X As Long
@@ -495,17 +470,6 @@ Module Program
         Dim prod3 = prod1 / prod2
         Return rayPoint - rayVector * prod3
     End Function
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -941,12 +905,7 @@ yolo:
 
 #End Region
 
-
-
-
-
-
-    Public Class PanelDataManager
+    Public Class PanelDataManager ' named for Uncle Bob.
         Private CenterCoordinates As (centerX As Integer, centerY As Integer, centerZ As Integer)
 
         Public North_a As (Integer, Integer, Integer)
@@ -1135,12 +1094,7 @@ yolo:
             Return crossProduct
         End Function
 
-
     End Class
-
-
-
-
     Public Enum PanelType
         BottomPanel
         NorthPanel

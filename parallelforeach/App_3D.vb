@@ -141,110 +141,288 @@
 
 
 
+
     Sub RefineConnections(ByRef connections As Dictionary(Of Integer, List(Of Integer)), ByVal points As Point3D())
-        ' Determine the size of the binary grid based on the range of points
-        Dim minX = Double.MaxValue, maxX = Double.MinValue
-        Dim minY = Double.MaxValue, maxY = Double.MinValue
-        Dim minZ = Double.MaxValue, maxZ = Double.MinValue
+        Dim initialCount As Integer = CountLines(connections)
+        Console.WriteLine("Initial line count: {0}", initialCount)
 
-        For Each point As Point3D In points
-            minX = Math.Min(minX, point.X)
-            maxX = Math.Max(maxX, point.X)
-            minY = Math.Min(minY, point.Y)
-            maxY = Math.Max(maxY, point.Y)
-            minZ = Math.Min(minZ, point.Z)
-            maxZ = Math.Max(maxZ, point.Z)
-        Next
+        Dim changesMade As Boolean = True
 
-        Dim gridSizeX = CInt(maxX - minX) + 1
-        Dim gridSizeY = CInt(maxY - minY) + 1
-        Dim gridSizeZ = CInt(maxZ - minZ) + 1
+        While changesMade
+            changesMade = False
 
-        ' Create the binary grid
-        Dim grid(gridSizeX - 1, gridSizeY - 1, gridSizeZ - 1) As Boolean
+            ' Create a copy of the connections to iterate over while modifying the original
+            Dim currentConnections As New Dictionary(Of Integer, List(Of Integer))
+            For Each kvp In connections
+                currentConnections(kvp.Key) = New List(Of Integer)(kvp.Value)
+            Next
 
-        ' Map points to the binary grid
-        For Each point As Point3D In points
-            Dim gridX = CInt(point.X - minX)
-            Dim gridY = CInt(point.Y - minY)
-            Dim gridZ = CInt(point.Z - minZ)
-            grid(gridX, gridY, gridZ) = True
-        Next
+            For Each pointId In currentConnections.Keys
+                Dim neighbors As New List(Of Integer)(currentConnections(pointId))
 
-        ' Iterate through each point and refine its neighbors
-        For Each kvp As KeyValuePair(Of Integer, List(Of Integer)) In connections
-            Dim pointId = kvp.Key
-            Dim neighbors = kvp.Value
-            Dim point = points(pointId - 1)
+                For Each neighborId In neighbors
+                    ' Perform union/intersection on the connection pairs
+                    Dim s1 = connections(pointId).Count
+                    Dim k1 = connections(pointId).Contains(neighborId)
+                    Dim s2 = connections(neighborId).Count
+                    Dim k2 = connections(neighborId).Contains(pointId)
 
-            ' Get the grid coordinates of the current point
-            Dim gridX = CInt(point.X - minX)
-            Dim gridY = CInt(point.Y - minY)
-            Dim gridZ = CInt(point.Z - minZ)
+                    Dim unionResult = UnionOp(s1, k1, s2, k2)
+                    Dim intersectResult = IntersectOp(s1, k1, s2, k2)
 
-            ' Check the 26-connected neighborhood in the grid
-            For dx = -1 To 1
-                For dy = -1 To 1
-                    For dz = -1 To 1
-                        If dx = 0 AndAlso dy = 0 AndAlso dz = 0 Then Continue For
-
-                        Dim newX = gridX + dx
-                        Dim newY = gridY + dy
-                        Dim newZ = gridZ + dz
-
-                        If newX >= 0 AndAlso newX < gridSizeX AndAlso
-                       newY >= 0 AndAlso newY < gridSizeY AndAlso
-                       newZ >= 0 AndAlso newZ < gridSizeZ AndAlso
-                       grid(newX, newY, newZ) Then
-
-                            ' Find the neighbor point ID
-                            For Each otherPoint As Point3D In points
-                                If otherPoint.X = newX + minX AndAlso
-                               otherPoint.Y = newY + minY AndAlso
-                               otherPoint.Z = newZ + minZ Then
-
-                                    Dim neighborId = otherPoint.Id
-                                    If Not neighbors.Contains(neighborId) Then
-                                        neighbors.Add(neighborId)
-                                    End If
-                                    Exit For
-                                End If
-                            Next
-                        End If
-                    Next
+                    If Not intersectResult.k Then
+                        ' Remove connection if intersection fails
+                        connections(pointId).Remove(neighborId)
+                        connections(neighborId).Remove(pointId)
+                        changesMade = True
+                        Console.WriteLine("Removed line between points {0} and {1}", pointId, neighborId)
+                    ElseIf unionResult.s > connections(pointId).Count Then
+                        ' Expand connection if union succeeds with greater size
+                        For Each id In connections(neighborId)
+                            If Not connections(pointId).Contains(id) Then
+                                connections(pointId).Add(id)
+                            End If
+                        Next
+                        changesMade = True
+                        Console.WriteLine("Expanded line between points {0} and {1}", pointId, neighborId)
+                    End If
                 Next
             Next
-        Next
+        End While
 
-        ' Remove duplicate lines
-        Dim uniqueLines As New HashSet(Of Tuple(Of Integer, Integer))
-        For Each kvp As KeyValuePair(Of Integer, List(Of Integer)) In connections
-            Dim pointId = kvp.Key
-            Dim neighbors = kvp.Value
+        Dim finalCount As Integer = CountLines(connections)
+        Console.WriteLine("Final line count: {0}", finalCount)
+        Console.WriteLine("Lines removed: {0}", initialCount - finalCount)
+    End Sub
 
-            For Each neighborId In neighbors
-                Dim line = Tuple.Create(Math.Min(pointId, neighborId), Math.Max(pointId, neighborId))
-                uniqueLines.Add(line)
+    Private Function UnionOp(s1 As Integer, k1 As Boolean, s2 As Integer, k2 As Boolean) As (s As Integer, k As Boolean)
+        If k1 And k2 Then
+            Return (Math.Max(s1, s2), True)
+        ElseIf k1 Then
+            Return (s1, True)
+        ElseIf k2 Then
+            Return (s2, True)
+        Else
+            Return (Math.Min(s1, s2), False)
+        End If
+    End Function
+
+    Private Function IntersectOp(s1 As Integer, k1 As Boolean, s2 As Integer, k2 As Boolean) As (s As Integer, k As Boolean)
+        If k1 And k2 Then
+            Return (Math.Min(s1, s2), True)
+        ElseIf k1 Then
+            Return (s2, False)
+        ElseIf k2 Then
+            Return (s1, False)
+        Else
+            Return (Math.Max(s1, s2), False)
+        End If
+    End Function
+
+    Private Function CountLines(connections As Dictionary(Of Integer, List(Of Integer))) As Integer
+        Dim lineCount As Integer = 0
+        Dim visitedPairs As New HashSet(Of (Integer, Integer))
+
+        For Each pointId In connections.Keys
+            For Each neighborId In connections(pointId)
+                Dim pair = If(pointId < neighborId, (pointId, neighborId), (neighborId, pointId))
+                If Not visitedPairs.Contains(pair) Then
+                    lineCount += 1
+                    visitedPairs.Add(pair)
+                End If
             Next
         Next
 
-        ' Update the connections dictionary with the refined neighbors
-        connections.Clear()
-        For Each line In uniqueLines
-            Dim pointId = line.Item1
-            Dim neighborId = line.Item2
+        Return lineCount
+    End Function
 
-            If Not connections.ContainsKey(pointId) Then
-                connections(pointId) = New List(Of Integer)
-            End If
-            connections(pointId).Add(neighborId)
 
-            If Not connections.ContainsKey(neighborId) Then
-                connections(neighborId) = New List(Of Integer)
-            End If
-            connections(neighborId).Add(pointId)
-        Next
-    End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+
+    'Sub RefineConnections(ByRef connections As Dictionary(Of Integer, List(Of Integer)), ByVal points As Point3D())
+    '    Dim changesMade As Boolean = True
+
+    '    While changesMade
+    '        changesMade = False
+
+    '        ' Create a copy of the connections to iterate over while modifying the original
+    '        Dim currentConnections As New Dictionary(Of Integer, List(Of Integer))
+    '        For Each kvp In connections
+    '            currentConnections(kvp.Key) = New List(Of Integer)(kvp.Value)
+    '        Next
+
+    '        For Each pointId In currentConnections.Keys
+    '            Dim neighbors As New List(Of Integer)(currentConnections(pointId))
+
+    '            For Each neighborId In neighbors
+    '                ' Perform union/intersection on the connection pairs
+    '                Dim s1 = connections(pointId).Count
+    '                Dim k1 = connections(pointId).Contains(neighborId)
+    '                Dim s2 = connections(neighborId).Count
+    '                Dim k2 = connections(neighborId).Contains(pointId)
+
+    '                Dim unionResult = UnionOp(s1, k1, s2, k2)
+    '                Dim intersectResult = IntersectOp(s1, k1, s2, k2)
+
+    '                If Not intersectResult.k Then
+    '                    ' Remove connection if intersection fails
+    '                    connections(pointId).Remove(neighborId)
+    '                    connections(neighborId).Remove(pointId)
+    '                    changesMade = True
+    '                ElseIf unionResult.s > connections(pointId).Count Then
+    '                    ' Expand connection if union succeeds with greater size
+    '                    connections(pointId).Add(neighborId)
+    '                    connections(neighborId).Add(pointId)
+    '                    changesMade = True
+    '                End If
+    '            Next
+    '        Next
+    '    End While
+    'End Sub
+
+    'Private Function UnionOp(s1 As Integer, k1 As Boolean, s2 As Integer, k2 As Boolean) As (s As Integer, k As Boolean)
+    '    If k1 And k2 Then
+    '        Return (Math.Max(s1, s2), True)
+    '    ElseIf k1 Then
+    '        Return (s1, True)
+    '    ElseIf k2 Then
+    '        Return (s2, True)
+    '    Else
+    '        Return (Math.Min(s1, s2), False)
+    '    End If
+    'End Function
+
+    'Private Function IntersectOp(s1 As Integer, k1 As Boolean, s2 As Integer, k2 As Boolean) As (s As Integer, k As Boolean)
+    '    If k1 And k2 Then
+    '        Return (Math.Min(s1, s2), True)
+    '    ElseIf k1 Then
+    '        Return (s2, False)
+    '    ElseIf k2 Then
+    '        Return (s1, False)
+    '    Else
+    '        Return (Math.Max(s1, s2), False)
+    '    End If
+    'End Function
+
+
+
+
+
+    'Sub RefineConnections(ByRef connections As Dictionary(Of Integer, List(Of Integer)), ByVal points As Point3D())
+    '    ' Determine the size of the binary grid based on the range of points
+    '    Dim minX = Double.MaxValue, maxX = Double.MinValue
+    '    Dim minY = Double.MaxValue, maxY = Double.MinValue
+    '    Dim minZ = Double.MaxValue, maxZ = Double.MinValue
+
+    '    For Each point As Point3D In points
+    '        minX = Math.Min(minX, point.X)
+    '        maxX = Math.Max(maxX, point.X)
+    '        minY = Math.Min(minY, point.Y)
+    '        maxY = Math.Max(maxY, point.Y)
+    '        minZ = Math.Min(minZ, point.Z)
+    '        maxZ = Math.Max(maxZ, point.Z)
+    '    Next
+
+    '    Dim gridSizeX = CInt(maxX - minX) + 1
+    '    Dim gridSizeY = CInt(maxY - minY) + 1
+    '    Dim gridSizeZ = CInt(maxZ - minZ) + 1
+
+    '    ' Create the binary grid
+    '    Dim grid(gridSizeX - 1, gridSizeY - 1, gridSizeZ - 1) As Boolean
+
+    '    ' Map points to the binary grid
+    '    For Each point As Point3D In points
+    '        Dim gridX = CInt(point.X - minX)
+    '        Dim gridY = CInt(point.Y - minY)
+    '        Dim gridZ = CInt(point.Z - minZ)
+    '        grid(gridX, gridY, gridZ) = True
+    '    Next
+
+    '    ' Iterate through each point and refine its neighbors
+    '    For Each kvp As KeyValuePair(Of Integer, List(Of Integer)) In connections
+    '        Dim pointId = kvp.Key
+    '        Dim neighbors = kvp.Value
+    '        Dim point = points(pointId - 1)
+
+    '        ' Get the grid coordinates of the current point
+    '        Dim gridX = CInt(point.X - minX)
+    '        Dim gridY = CInt(point.Y - minY)
+    '        Dim gridZ = CInt(point.Z - minZ)
+
+    '        ' Check the 26-connected neighborhood in the grid
+    '        For dx = -1 To 1
+    '            For dy = -1 To 1
+    '                For dz = -1 To 1
+    '                    If dx = 0 AndAlso dy = 0 AndAlso dz = 0 Then Continue For
+
+    '                    Dim newX = gridX + dx
+    '                    Dim newY = gridY + dy
+    '                    Dim newZ = gridZ + dz
+
+    '                    If newX >= 0 AndAlso newX < gridSizeX AndAlso
+    '                   newY >= 0 AndAlso newY < gridSizeY AndAlso
+    '                   newZ >= 0 AndAlso newZ < gridSizeZ AndAlso
+    '                   grid(newX, newY, newZ) Then
+
+    '                        ' Find the neighbor point ID
+    '                        For Each otherPoint As Point3D In points
+    '                            If otherPoint.X = newX + minX AndAlso
+    '                           otherPoint.Y = newY + minY AndAlso
+    '                           otherPoint.Z = newZ + minZ Then
+
+    '                                Dim neighborId = otherPoint.Id
+    '                                If Not neighbors.Contains(neighborId) Then
+    '                                    neighbors.Add(neighborId)
+    '                                End If
+    '                                Exit For
+    '                            End If
+    '                        Next
+    '                    End If
+    '                Next
+    '            Next
+    '        Next
+    '    Next
+
+    '    ' Remove duplicate lines
+    '    Dim uniqueLines As New HashSet(Of Tuple(Of Integer, Integer))
+    '    For Each kvp As KeyValuePair(Of Integer, List(Of Integer)) In connections
+    '        Dim pointId = kvp.Key
+    '        Dim neighbors = kvp.Value
+
+    '        For Each neighborId In neighbors
+    '            Dim line = Tuple.Create(Math.Min(pointId, neighborId), Math.Max(pointId, neighborId))
+    '            uniqueLines.Add(line)
+    '        Next
+    '    Next
+
+    '    ' Update the connections dictionary with the refined neighbors
+    '    connections.Clear()
+    '    For Each line In uniqueLines
+    '        Dim pointId = line.Item1
+    '        Dim neighborId = line.Item2
+
+    '        If Not connections.ContainsKey(pointId) Then
+    '            connections(pointId) = New List(Of Integer)
+    '        End If
+    '        connections(pointId).Add(neighborId)
+
+    '        If Not connections.ContainsKey(neighborId) Then
+    '            connections(neighborId) = New List(Of Integer)
+    '        End If
+    '        connections(neighborId).Add(pointId)
+    '    Next
+    'End Sub
 
 
     'Sub RefineConnections(ByRef connections As Dictionary(Of Integer, List(Of Integer)), ByVal points As Point3D())

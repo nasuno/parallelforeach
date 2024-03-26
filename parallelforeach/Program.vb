@@ -380,12 +380,10 @@ Module Program
         AddMyObjectToFactory(168, 147, -74)
         AddMyObjectToFactory(-250, 300, -78)
         AddMyObjectToFactory(-250, -75, -78)
-#End Region
-
-
-
 
     End Sub
+
+#End Region
 
     Sub AddMyObjectToFactory(x As Integer, y As Integer, z As Integer)
         Dim key As Integer = GetNextUniqId()
